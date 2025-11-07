@@ -63,7 +63,7 @@ class HephaestusConfig:
 
     # Vector Store Configuration
     collection_prefix: str = "hephaestus"
-    embedding_dimension: int = 1536
+    embedding_dimension: int = 3072
     embedding_model: str = "text-embedding-3-large"
 
     # MCP Server Configuration

@@ -80,7 +80,7 @@ class Config:
         vector_store = config.get('vector_store', {})
         self.qdrant_url = vector_store.get('qdrant_url', 'http://localhost:6333')
         self.qdrant_collection_prefix = vector_store.get('collection_prefix', 'hephaestus')
-        self.embedding_dimension = vector_store.get('embedding_dimension', 1536)
+        self.embedding_dimension = vector_store.get('embedding_dimension', 3072)
 
         # Monitoring settings
         monitoring = config.get('monitoring', {})

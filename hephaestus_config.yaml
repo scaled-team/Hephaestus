@@ -3,12 +3,12 @@ server:
   port: 8000
   enable_cors: true
 paths:
-  database: ./hephaestus.db
-  phases_folder: ./example_workflows/crackme_solving
+  database: ./data/hephaestus.db
+  phases_folder: ./src/workflow/prd_to_software
   worktree_base: /tmp/hephaestus_worktrees
-  project_root: /tmp/test_3gaur34
+  project_root: ./projects/stockton-ai
 git:
-  main_repo_path: /tmp/test_3gaur34
+  main_repo_path: ./projects/stockton-ai
   worktree_branch_prefix: agent-
   auto_commit: true
   conflict_resolution: newest_file_wins
@@ -67,9 +67,9 @@ agents:
   max_health_failures: 3
   termination_delay: 5
 vector_store:
-  qdrant_url: http://localhost:6333
+  qdrant_url: http://qdrant:6333
   collection_prefix: hephaestus
-  embedding_dimension: 1536
+  embedding_dimension: 3072
 monitoring:
   enabled: true
   interval_seconds: 60
@@ -89,7 +89,7 @@ task_deduplication:
   embedding_dimension: 3072
   batch_size: 100
 diagnostic_agent:
-  enabled: false
+  enabled: true
   cooldown_seconds: 60
   min_stuck_time_seconds: 60
   max_agents_to_analyze: 15

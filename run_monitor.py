@@ -50,8 +50,8 @@ async def setup_monitoring_system():
         logger.info(f"Using monitoring interval: {config.monitoring_interval_seconds} seconds")
 
         # Initialize database manager
-        db_manager = DatabaseManager()
-        logger.info("Database manager initialized")
+        db_manager = DatabaseManager(str(config.database_path))
+        logger.info(f"Database manager initialized: {config.database_path}")
 
         # Initialize LLM provider
         llm_provider = get_llm_provider()

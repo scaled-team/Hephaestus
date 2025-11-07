@@ -11,13 +11,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: '0.0.0.0', // Listen on all interfaces for Docker
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        // Use Docker service name when in container, localhost when local dev
+        target: process.env.BACKEND_URL || 'http://localhost:8000',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://localhost:8000',
+        target: process.env.BACKEND_WS_URL || 'ws://localhost:8000',
         ws: true,
       },
     },
