@@ -30,7 +30,7 @@ from dotenv import load_dotenv
 
 # Import from example_workflows
 sys.path.insert(0, str(Path(__file__).parent))
-from example_workflows.prd_to_software.phases import PRD_PHASES, PRD_WORKFLOW_CONFIG
+from docs.workflows.prd_to_software.phases import PRD_PHASES, PRD_WORKFLOW_CONFIG
 
 from src.sdk import HephaestusSDK
 
