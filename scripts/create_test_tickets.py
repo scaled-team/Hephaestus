@@ -2,6 +2,7 @@
 """Create test tickets for E2E testing of the ticket UI."""
 
 import json
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -13,9 +14,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.core.database import DatabaseManager
 from src.core.database import Workflow, BoardConfig, Ticket
 
-# Initialize database
-db_path = Path("./hephaestus.db")
-db_manager = DatabaseManager(str(db_path))
+# Initialize database - use DATABASE_PATH environment variable if set
+db_path = os.getenv("DATABASE_PATH", "./hephaestus.db")
+print(f"Using database: {db_path}")
+db_manager = DatabaseManager(db_path)
 session = db_manager.get_session()
 
 print("Creating test data for ticket E2E test...")

@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """Create test tickets for E2E testing using raw SQL."""
 
+import os
 import sqlite3
 import json
 import uuid
 from datetime import datetime
 from pathlib import Path
 
-db_path = Path("./hephaestus.db")
+# Use DATABASE_PATH environment variable if set, otherwise default
+db_path = os.getenv("DATABASE_PATH", "./hephaestus.db")
+print(f"Using database: {db_path}")
 
 print("Creating test data for ticket E2E test...")
 
-conn = sqlite3.connect(str(db_path))
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 try:

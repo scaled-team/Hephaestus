@@ -19,10 +19,23 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      # Data persistence
       - ./data:/app/data
       - ./logs:/app/logs
       - ./docs:/app/docs
-      - /var/run/docker.sock:/var/run/docker.sock  # For tmux session management
+      # Source code (for development hot-reloading)
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+      # Configuration files
+      - ./hephaestus_config.yaml:/app/hephaestus_config.yaml
+      - ./opencode.json:/app/opencode.json
+      - ./.env:/app/.env
+      # Entry point scripts
+      - ./run_server.py:/app/run_server.py
+      - ./run_monitor.py:/app/run_monitor.py
+      - ./run_prd_workflow.py:/app/run_prd_workflow.py
+      # Docker socket for tmux session management
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -42,9 +55,22 @@ services:
     container_name: hephaestus-monitor
     command: python run_monitor.py
     volumes:
+      # Data persistence
       - ./data:/app/data
       - ./logs:/app/logs
       - ./docs:/app/docs
+      # Source code (for development hot-reloading)
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+      # Configuration files
+      - ./hephaestus_config.yaml:/app/hephaestus_config.yaml
+      - ./opencode.json:/app/opencode.json
+      - ./.env:/app/.env
+      # Entry point scripts
+      - ./run_server.py:/app/run_server.py
+      - ./run_monitor.py:/app/run_monitor.py
+      - ./run_prd_workflow.py:/app/run_prd_workflow.py
+      # Docker socket for tmux session management
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}

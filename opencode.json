@@ -1,0 +1,63 @@
+{
+  "permission": {
+    "edit": "allow",
+    "bash": "allow",
+    "webfetch": "allow",
+    "read": "allow",
+    "write": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "multiedit": "allow",
+    "task": "allow",
+    "websearch": "allow",
+    "skill": "allow",
+    "slashcommand": "allow"
+  },
+  "agentic": {
+    "mode": "full",
+    "auto_approve": true,
+    "require_confirmation": false,
+    "allow_file_operations": true,
+    "allow_network_operations": true,
+    "allow_system_commands": true,
+    "allow_subprocess": true,
+    "sandbox_mode": false
+  },
+  "mcpServers": {
+    "qdrant": {
+      "command": "python",
+      "args": [
+        "/app/qdrant_mcp_openai.py"
+      ],
+      "env": {
+        "QDRANT_URL": "http://qdrant:6333",
+        "COLLECTION_NAME": "hephaestus_agent_memories",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "EMBEDDING_MODEL": "text-embedding-3-large"
+      },
+      "description": "Qdrant vector store with OpenAI embeddings for agent memory and RAG",
+      "capabilities": [
+        "qdrant_find - Search for relevant memories using semantic search",
+        "qdrant_store - Save discoveries and learnings to vector store"
+      ]
+    },
+    "hephaestus": {
+      "command": "python",
+      "args": [
+        "/app/claude_mcp_client.py"
+      ],
+      "env": {
+        "HEPHAESTUS_URL": "http://localhost:8000"
+      },
+      "description": "Hephaestus task management and workflow coordination",
+      "capabilities": [
+        "create_task - Spawn new tasks for any phase",
+        "get_tasks - Query task status and information",
+        "update_task_status - Mark tasks as done/failed",
+        "save_memory - Store learnings in the knowledge base",
+        "get_agent_status - Check other agents' status",
+        "health_check - Verify Hephaestus server connectivity"
+      ]
+    }
+  }
+}

@@ -60,9 +60,8 @@ llm:
       temperature: 0.8
       max_tokens: 4000
 agents:
-  default_cli_tool: claude
-  cli_model: GLM-4.6
-  glm_api_token_env: GLM_API_TOKEN
+  default_cli_tool: opencode
+  cli_model: anthropic/claude-haiku-4.5
   tmux_session_prefix: agent
   health_check_interval: 60
   max_health_failures: 3

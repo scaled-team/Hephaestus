@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Initialize the Hephaestus database."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -12,9 +13,11 @@ from src.core.database import DatabaseManager
 
 def main():
     """Initialize the database with all tables."""
-    print("Initializing Hephaestus database...")
+    # Use DATABASE_PATH environment variable if set, otherwise default
+    db_path = os.getenv("DATABASE_PATH", "./hephaestus.db")
+    print(f"Initializing Hephaestus database at: {db_path}")
 
-    db_manager = DatabaseManager("hephaestus.db")
+    db_manager = DatabaseManager(db_path)
 
     # Create all tables
     db_manager.create_tables()

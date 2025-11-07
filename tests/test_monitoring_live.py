@@ -23,11 +23,13 @@ async def setup_test_environment():
     """Initialize database and create test agents."""
     print("🚀 Setting up test environment...")
 
-    # Initialize database
-    db_manager = DatabaseManager("hephaestus.db")
+    # Initialize database - use DATABASE_PATH environment variable if set
+    db_path = os.getenv("DATABASE_PATH", "./hephaestus.db")
+    print(f"Using database: {db_path}")
+    db_manager = DatabaseManager(db_path)
     db_manager.create_tables()
 
-    db_manager = DatabaseManager()
+    db_manager = DatabaseManager(db_path)
     llm_provider = get_llm_provider()
     agent_manager = AgentManager(db_manager=db_manager, llm_provider=llm_provider)
 
