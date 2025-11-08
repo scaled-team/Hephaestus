@@ -29,7 +29,6 @@ services:
       # Configuration files
       - ./hephaestus_config.yaml:/app/hephaestus_config.yaml
       - ./opencode.json:/app/opencode.json
-      - ./opencode.json:/root/.config/opencode/opencode.json
       - ./.env:/app/.env
       # Entry point scripts
       - ./run_server.py:/app/run_server.py
@@ -38,17 +37,14 @@ services:
       # Docker socket for tmux session management
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - LLM_MODEL=${LLM_MODEL:-claude-haiku-4.5-20251001}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4-turbo-preview}
       - DATABASE_PATH=/app/data/hephaestus.db
       - QDRANT_URL=http://qdrant:6333
       - MCP_HOST=0.0.0.0
       - MCP_PORT=8000
-      - HEPHAESTUS_PHASES_FOLDER=/app/src/workflow/prd_to_software
     depends_on:
       - qdrant
     restart: unless-stopped
@@ -71,7 +67,6 @@ services:
       # Configuration files
       - ./hephaestus_config.yaml:/app/hephaestus_config.yaml
       - ./opencode.json:/app/opencode.json
-      - ./opencode.json:/root/.config/opencode/opencode.json
       - ./.env:/app/.env
       # Entry point scripts
       - ./run_server.py:/app/run_server.py
@@ -80,12 +75,10 @@ services:
       # Docker socket for tmux session management
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - LLM_MODEL=${LLM_MODEL:-claude-haiku-4.5-20251001}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4-turbo-preview}
       - DATABASE_PATH=/app/data/hephaestus.db
       - QDRANT_URL=http://qdrant:6333
       - MONITORING_INTERVAL_SECONDS=${MONITORING_INTERVAL_SECONDS:-60}

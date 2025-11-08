@@ -60,9 +60,25 @@ class Agent(Base):
     created_tasks = relationship(
         "Task", back_populates="created_by_agent", foreign_keys="Task.created_by_agent_id"
     )
-    assigned_tasks = relationship("Task", foreign_keys="Task.assigned_agent_id")
+    assigned_tasks = relationship(
+        "Task",
+        back_populates="assigned_agent",
+        foreign_keys="Task.assigned_agent_id",
+    )
     memories = relationship("Memory", back_populates="agent")
     logs = relationship("AgentLog", back_populates="agent")
+    worktree_commits = relationship(
+        "WorktreeCommit",
+        back_populates="agent",
+        foreign_keys="WorktreeCommit.agent_id",
+        overlaps="worktree,commits",
+    )
+    conflict_resolutions = relationship(
+        "MergeConflictResolution",
+        back_populates="agent",
+        foreign_keys="MergeConflictResolution.agent_id",
+        overlaps="worktree",
+    )
 
 
 class Task(Base):
@@ -126,7 +142,11 @@ class Task(Base):
     related_ticket_ids = Column(JSON)  # List of related ticket IDs for context
 
     # Relationships
-    assigned_agent = relationship("Agent", foreign_keys=[assigned_agent_id])
+    assigned_agent = relationship(
+        "Agent",
+        back_populates="assigned_tasks",
+        foreign_keys=[assigned_agent_id],
+    )
     duplicate_of = relationship(
         "Task", remote_side=[id], foreign_keys=[duplicate_of_task_id], post_update=True
     )
@@ -310,12 +330,14 @@ class AgentWorktree(Base):
         back_populates="worktree",
         foreign_keys="WorktreeCommit.agent_id",
         primaryjoin="AgentWorktree.agent_id==WorktreeCommit.agent_id",
+        overlaps="worktree_commits,agent",
     )
     conflict_resolutions = relationship(
         "MergeConflictResolution",
         back_populates="worktree",
         foreign_keys="MergeConflictResolution.agent_id",
         primaryjoin="AgentWorktree.agent_id==MergeConflictResolution.agent_id",
+        overlaps="agent,conflict_resolutions",
     )
 
 
@@ -341,13 +363,17 @@ class WorktreeCommit(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
-    agent = relationship("Agent", backref="worktree_commits", overlaps="commits")
+    agent = relationship(
+        "Agent",
+        foreign_keys=[agent_id],
+        overlaps="worktree_commits,commits",
+    )
     worktree = relationship(
         "AgentWorktree",
         back_populates="commits",
         foreign_keys=[agent_id],
         primaryjoin="WorktreeCommit.agent_id==AgentWorktree.agent_id",
-        overlaps="agent,worktree_commits",
+        overlaps="agent",
     )
 
 
@@ -390,7 +416,12 @@ class MergeConflictResolution(Base):
     commit_sha = Column(String, ForeignKey("worktree_commits.commit_sha"))
 
     # Relationships
-    agent = relationship("Agent", backref="conflict_resolutions", overlaps="conflict_resolutions")
+    agent = relationship(
+        "Agent",
+        back_populates="conflict_resolutions",
+        foreign_keys=[agent_id],
+        overlaps="conflict_resolutions",
+    )
     worktree = relationship(
         "AgentWorktree",
         back_populates="conflict_resolutions",

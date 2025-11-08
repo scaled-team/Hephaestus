@@ -1,0 +1,98 @@
+{
+  "models": {
+    "default": "claude-haiku-4-5",
+    "fallback": "claude-sonnet-4-5",
+    "primary_version": "4.5",
+    "available": [
+      {
+        "id": "claude-haiku-4.5",
+        "name": "Anthropic Claude Haiku 4.5",
+        "provider": "anthropic",
+        "version": "4.5",
+        "tier": "fast",
+        "context_window": 200000,
+        "use_case": "Default model - fast, efficient responses for most tasks"
+      },
+      {
+        "id": "claude-sonnet-4-5",
+        "name": "Anthropic Claude Sonnet 4.5",
+        "provider": "anthropic",
+        "version": "4.5",
+        "tier": "balanced",
+        "context_window": 200000,
+        "use_case": "Fallback model - complex reasoning when Haiku unavailable"
+      }
+    ],
+    "openrouter_aliases": {
+      "claude-haiku-4-5": "anthropic/claude-haiku-4.5",
+      "claude-sonnet-4-5": "anthropic/claude-sonnet-4.5"
+    },
+    "volume_mount": {
+      "path": "/config/opencode.json",
+      "sync": "inline",
+      "persist": true,
+      "reload_on_change": true
+    }
+  },
+  "permission": {
+    "edit": "allow",
+    "bash": "allow",
+    "webfetch": "allow",
+    "read": "allow",
+    "write": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "multiedit": "allow",
+    "task": "allow",
+    "websearch": "allow",
+    "skill": "allow",
+    "slashcommand": "allow"
+  },
+  "agentic": {
+    "mode": "full",
+    "auto_approve": true,
+    "require_confirmation": false,
+    "allow_file_operations": true,
+    "allow_network_operations": true,
+    "allow_system_commands": true,
+    "allow_subprocess": true,
+    "sandbox_mode": false
+  },
+  "mcpServers": {
+    "qdrant": {
+      "command": "python",
+      "args": [
+        "/app/qdrant_mcp_openai.py"
+      ],
+      "env": {
+        "QDRANT_URL": "http://qdrant:6333",
+        "COLLECTION_NAME": "hephaestus_agent_memories",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "EMBEDDING_MODEL": "text-embedding-3-large"
+      },
+      "description": "Qdrant vector store with OpenAI embeddings for agent memory and RAG",
+      "capabilities": [
+        "qdrant_find - Search for relevant memories using semantic search",
+        "qdrant_store - Save discoveries and learnings to vector store"
+      ]
+    },
+    "hephaestus": {
+      "command": "python",
+      "args": [
+        "/app/claude_mcp_client.py"
+      ],
+      "env": {
+        "HEPHAESTUS_URL": "http://localhost:8000"
+      },
+      "description": "Hephaestus task management and workflow coordination",
+      "capabilities": [
+        "create_task - Spawn new tasks for any phase",
+        "get_tasks - Query task status and information",
+        "update_task_status - Mark tasks as done/failed",
+        "save_memory - Store learnings in the knowledge base",
+        "get_agent_status - Check other agents' status",
+        "health_check - Verify Hephaestus server connectivity"
+      ]
+    }
+  }
+}

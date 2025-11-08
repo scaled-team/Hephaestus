@@ -710,38 +710,128 @@ async def startup_event():
         logger.info(f"Folder exists: {full_path.exists()}")
         logger.info(f"Is directory: {full_path.is_dir() if full_path.exists() else 'N/A'}")
 
-        if full_path.exists() and full_path.is_dir():
-            # List files in directory
-            files = list(full_path.glob("*.yaml"))
-            logger.info(f"YAML files found: {len(files)}")
-            for f in files:
-                logger.info(f"  - {f.name}")
-
         try:
-            from src.phases import PhaseLoader
-            logger.info("PhaseLoader imported successfully")
+            # Try to load from Python module first (for prd_to_software workflow)
+            try:
+                import sys
+                import importlib.util
 
-            # Load phases from folder
-            logger.info(f"Calling PhaseLoader.load_phases_from_folder('{phases_folder}')")
-            workflow_def = PhaseLoader.load_phases_from_folder(phases_folder)
-            logger.info(f"Loaded workflow '{workflow_def.name}' with {len(workflow_def.phases)} phases")
+                # Add phases folder to Python path
+                phases_folder_abs = str(full_path.parent) if not full_path.is_absolute() else str(full_path.parent)
+                if phases_folder_abs not in sys.path:
+                    sys.path.insert(0, phases_folder_abs)
 
-            # Load phases configuration (for ticket tracking, result handling, etc.)
-            logger.info(f"Loading phases_config.yaml from '{phases_folder}'")
-            phases_config = PhaseLoader.load_phases_config(phases_folder)
-            logger.info(f"Loaded phases config: enable_tickets={phases_config.enable_tickets}, has_result={phases_config.has_result}")
+                # Try to import phases.py from the workflow folder
+                module_name = full_path.name
+                spec = importlib.util.spec_from_file_location(
+                    f"{module_name}.phases",
+                    full_path / "phases.py"
+                )
 
-            # Initialize workflow in database
-            logger.info("Initializing workflow in database...")
-            workflow_id = server_state.phase_manager.initialize_workflow(workflow_def, phases_config)
-            logger.info(f"Initialized workflow with ID: {workflow_id}")
+                if spec and spec.loader:
+                    logger.info(f"Found phases.py module in {phases_folder}")
+                    phases_module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(phases_module)
 
-            # Log phase names
-            logger.info("Loaded phases:")
-            for phase in workflow_def.phases:
-                logger.info(f"  Phase {phase.order}: {phase.name}")
-                logger.info(f"    - Description: {phase.description[:100]}...")
-                logger.info(f"    - Done definitions: {len(phase.done_definitions)} items")
+                    # Get PRD_PHASES and PRD_WORKFLOW_CONFIG from module
+                    phases_list = getattr(phases_module, 'PRD_PHASES', None)
+                    workflow_config_obj = getattr(phases_module, 'PRD_WORKFLOW_CONFIG', None)
+
+                    if phases_list:
+                        logger.info(f"Successfully loaded {len(phases_list)} phases from Python module")
+
+                        # Convert SDK Phase objects to PhaseDefinition objects
+                        from src.phases.models import PhaseDefinition, WorkflowDefinition, PhasesConfig
+
+                        phase_definitions = []
+                        for sdk_phase in phases_list:
+                            # SDK Phase has .id (int), .name (str), .description, .done_definitions, etc.
+                            # PhaseDefinition needs filename, order, name, description, done_definitions
+                            phase_def = PhaseDefinition(
+                                filename=f"{sdk_phase.id:02d}_{sdk_phase.name}.yaml",  # Generate filename
+                                order=sdk_phase.id,  # SDK Phase.id is the order number
+                                name=sdk_phase.name.replace('_', ' ').title(),
+                                description=sdk_phase.description,
+                                done_definitions=sdk_phase.done_definitions,
+                                additional_notes=sdk_phase.additional_notes or None,
+                                outputs="\n".join(f"- {o}" for o in sdk_phase.outputs) if sdk_phase.outputs else None,
+                                next_steps="\n".join(f"- {s}" for s in sdk_phase.next_steps) if sdk_phase.next_steps else None,
+                                working_directory=sdk_phase.working_directory or None,
+                                validation=sdk_phase.validation.__dict__ if sdk_phase.validation else None
+                            )
+                            phase_definitions.append(phase_def)
+
+                        logger.info(f"Converted {len(phase_definitions)} SDK Phase objects to PhaseDefinitions")
+
+                        # Convert to WorkflowDefinition
+                        workflow_name = full_path.name.replace('_', ' ').title()
+                        workflow_def = WorkflowDefinition(
+                            name=workflow_name,
+                            phases_folder=str(full_path),
+                            phases=phase_definitions
+                        )
+
+                        # Convert workflow config to PhasesConfig
+                        phases_config = PhasesConfig(
+                            enable_tickets=getattr(workflow_config_obj, 'enable_tickets', True) if workflow_config_obj else True,
+                            has_result=getattr(workflow_config_obj, 'has_result', False) if workflow_config_obj else False,
+                            board_config=getattr(workflow_config_obj, 'board_config', {}) if workflow_config_obj else {}
+                        )
+
+                        logger.info(f"Loaded workflow '{workflow_def.name}' with {len(workflow_def.phases)} phases from Python")
+
+                        # Initialize workflow in database
+                        logger.info("Initializing workflow in database...")
+                        workflow_id = server_state.phase_manager.initialize_workflow(workflow_def, phases_config)
+                        logger.info(f"Initialized workflow with ID: {workflow_id}")
+
+                        # Log phase names
+                        logger.info("Loaded phases:")
+                        for phase in workflow_def.phases:
+                            logger.info(f"  Phase {phase.order}: {phase.name}")
+                            logger.info(f"    - Description: {phase.description[:100]}...")
+                            logger.info(f"    - Done definitions: {len(phase.done_definitions)} items")
+                    else:
+                        raise ValueError("No PRD_PHASES found in phases.py module")
+                else:
+                    # Fallback to YAML loading
+                    raise ValueError("No phases.py found, trying YAML loading")
+
+            except Exception as python_load_error:
+                logger.info(f"Python module loading failed ({str(python_load_error)}), trying YAML...")
+
+                # Fallback to YAML loading
+                if full_path.exists() and full_path.is_dir():
+                    # List files in directory
+                    files = list(full_path.glob("*.yaml"))
+                    logger.info(f"YAML files found: {len(files)}")
+                    for f in files:
+                        logger.info(f"  - {f.name}")
+
+                from src.phases import PhaseLoader
+                logger.info("PhaseLoader imported successfully")
+
+                # Load phases from folder
+                logger.info(f"Calling PhaseLoader.load_phases_from_folder('{phases_folder}')")
+                workflow_def = PhaseLoader.load_phases_from_folder(phases_folder)
+                logger.info(f"Loaded workflow '{workflow_def.name}' with {len(workflow_def.phases)} phases")
+
+                # Load phases configuration (for ticket tracking, result handling, etc.)
+                logger.info(f"Loading phases_config.yaml from '{phases_folder}'")
+                phases_config = PhaseLoader.load_phases_config(phases_folder)
+                logger.info(f"Loaded phases config: enable_tickets={phases_config.enable_tickets}, has_result={phases_config.has_result}")
+
+                # Initialize workflow in database
+                logger.info("Initializing workflow in database...")
+                workflow_id = server_state.phase_manager.initialize_workflow(workflow_def, phases_config)
+                logger.info(f"Initialized workflow with ID: {workflow_id}")
+
+                # Log phase names
+                logger.info("Loaded phases:")
+                for phase in workflow_def.phases:
+                    logger.info(f"  Phase {phase.order}: {phase.name}")
+                    logger.info(f"    - Description: {phase.description[:100]}...")
+                    logger.info(f"    - Done definitions: {len(phase.done_definitions)} items")
 
         except ImportError as e:
             logger.error(f"Failed to import PhaseLoader: {e}")
@@ -1855,64 +1945,100 @@ async def save_memory(
         # Process the embedding and deduplication asynchronously
         async def process_memory_async():
             try:
+                logger.info(f"[MEMORY] Starting async processing for memory {memory_id}")
+
                 # 1. Generate embedding
-                embedding = await server_state.llm_provider.generate_embedding(request.memory_content)
+                try:
+                    logger.debug(f"[MEMORY] Generating embedding for content: {request.memory_content[:50]}...")
+                    embedding = await server_state.llm_provider.generate_embedding(request.memory_content)
+                    logger.info(f"[MEMORY] ✅ Embedding generated successfully ({len(embedding)} dims)")
+                except Exception as e:
+                    logger.error(f"[MEMORY] ❌ Failed to generate embedding: {type(e).__name__}: {e}", exc_info=True)
+                    raise
 
                 # 2. Check for similar memories
-                similar = await server_state.vector_store.search(
-                    collection="agent_memories",
-                    query_vector=embedding,
-                    limit=5,
-                    score_threshold=0.95,  # High threshold for deduplication
-                )
+                try:
+                    logger.debug(f"[MEMORY] Searching for similar memories in agent_memories collection")
+                    similar = await server_state.vector_store.search(
+                        collection="agent_memories",
+                        query_vector=embedding,
+                        limit=5,
+                        score_threshold=0.95,  # High threshold for deduplication
+                    )
+                    logger.info(f"[MEMORY] Search completed. Found {len(similar)} similar memories")
+                except Exception as e:
+                    logger.error(f"[MEMORY] ❌ Failed to search for similar memories: {type(e).__name__}: {e}", exc_info=True)
+                    raise
 
                 # 3. If not duplicate, store in vector database
                 if not similar or similar[0]["score"] < 0.95:
-                    # Store in vector database
-                    success = await server_state.vector_store.store_memory(
-                        collection="agent_memories",
-                        memory_id=memory_id,
-                        embedding=embedding,
-                        content=request.memory_content,
-                        metadata={
-                            "agent_id": agent_id,
-                            "memory_type": request.memory_type,
-                            "related_files": request.related_files,
-                            "tags": request.tags,
-                        },
-                    )
+                    try:
+                        logger.info(f"[MEMORY] Storing memory in vector database...")
+                        # Store in vector database
+                        success = await server_state.vector_store.store_memory(
+                            collection="agent_memories",
+                            memory_id=memory_id,
+                            embedding=embedding,
+                            content=request.memory_content,
+                            metadata={
+                                "agent_id": agent_id,
+                                "memory_type": request.memory_type,
+                                "related_files": request.related_files,
+                                "tags": request.tags,
+                            },
+                        )
 
-                    # Update memory with embedding ID
-                    session = server_state.db_manager.get_session()
-                    memory = session.query(Memory).filter_by(id=memory_id).first()
-                    if memory:
-                        memory.embedding_id = memory_id if success else None
-                        session.commit()
-                    session.close()
+                        if success:
+                            logger.info(f"[MEMORY] ✅ Memory {memory_id} stored successfully in Qdrant")
+                        else:
+                            logger.error(f"[MEMORY] ❌ Memory {memory_id} store returned False")
 
-                    logger.info(f"Memory {memory_id} indexed successfully in background")
+                        # Update memory with embedding ID
+                        session = server_state.db_manager.get_session()
+                        memory = session.query(Memory).filter_by(id=memory_id).first()
+                        if memory:
+                            memory.embedding_id = memory_id if success else None
+                            session.commit()
+                            logger.info(f"[MEMORY] Database record updated (embedding_id set to {memory.embedding_id})")
+                        session.close()
+
+                        logger.info(f"[MEMORY] ✅ Memory {memory_id} indexed successfully in background")
+                    except Exception as e:
+                        logger.error(f"[MEMORY] ❌ Failed to store memory {memory_id}: {type(e).__name__}: {e}", exc_info=True)
+                        raise
                 else:
                     # Memory is too similar to existing one - mark as duplicate
+                    try:
+                        logger.info(f"[MEMORY] Memory is duplicate of {similar[0]['id']} (score: {similar[0]['score']})")
+                        session = server_state.db_manager.get_session()
+                        memory = session.query(Memory).filter_by(id=memory_id).first()
+                        if memory:
+                            # Mark as duplicate by adding a reference to the original
+                            memory.tags = (memory.tags or []) + [f"duplicate_of:{similar[0]['id']}"]
+                            session.commit()
+                            logger.info(f"[MEMORY] ✅ Memory {memory_id} marked as duplicate")
+                        session.close()
+                    except Exception as e:
+                        logger.error(f"[MEMORY] ❌ Failed to mark memory as duplicate: {type(e).__name__}: {e}", exc_info=True)
+                        raise
+
+            except Exception as e:
+                logger.error(f"[MEMORY] ❌ CRITICAL: Failed to process memory {memory_id} in background: {type(e).__name__}: {e}", exc_info=True)
+                # Update memory with error status
+                try:
                     session = server_state.db_manager.get_session()
                     memory = session.query(Memory).filter_by(id=memory_id).first()
                     if memory:
-                        # Mark as duplicate by adding a reference to the original
-                        memory.tags = (memory.tags or []) + [f"duplicate_of:{similar[0]['id']}"]
+                        error_tag = f"indexing_error:{str(e)[:100]}"
+                        memory.tags = (memory.tags or []) + [error_tag]
                         session.commit()
+                        logger.info(f"[MEMORY] Memory tagged with error: {error_tag}")
                     session.close()
-                    logger.info(f"Memory {memory_id} marked as duplicate of {similar[0]['id']}")
-
-            except Exception as e:
-                logger.error(f"Failed to process memory {memory_id} in background: {e}")
-                # Update memory with error status
-                session = server_state.db_manager.get_session()
-                memory = session.query(Memory).filter_by(id=memory_id).first()
-                if memory:
-                    memory.tags = (memory.tags or []) + [f"indexing_error:{str(e)[:50]}"]
-                    session.commit()
-                session.close()
+                except Exception as e2:
+                    logger.error(f"[MEMORY] ❌ Failed to update error status: {type(e2).__name__}: {e2}", exc_info=True)
 
         # Start background processing
+        logger.info(f"[MEMORY] Scheduling async processing task for memory {memory_id}")
         asyncio.create_task(process_memory_async())
 
         # Return immediately with memory ID
@@ -1925,6 +2051,93 @@ async def save_memory(
     except Exception as e:
         logger.error(f"Failed to save memory: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/memory/diagnostics")
+async def memory_diagnostics():
+    """Get comprehensive memory system diagnostics."""
+    diagnostics = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "services": {},
+        "collections": {},
+        "errors": []
+    }
+
+    # Check Qdrant connectivity
+    try:
+        stats = server_state.vector_store.get_all_stats()
+        diagnostics["services"]["qdrant"] = {
+            "status": "✅ OK",
+            "collections": stats
+        }
+    except Exception as e:
+        diagnostics["services"]["qdrant"] = {
+            "status": "❌ ERROR",
+            "error": str(e)
+        }
+        diagnostics["errors"].append(f"Qdrant error: {e}")
+
+    # Check embedding service
+    try:
+        test_embedding = await server_state.llm_provider.generate_embedding("test")
+        diagnostics["services"]["embedding"] = {
+            "status": "✅ OK",
+            "dimensions": len(test_embedding)
+        }
+    except Exception as e:
+        diagnostics["services"]["embedding"] = {
+            "status": "❌ ERROR",
+            "error": str(e)
+        }
+        diagnostics["errors"].append(f"Embedding error: {e}")
+
+    # Check database connectivity
+    try:
+        session = server_state.db_manager.get_session()
+        memory_count = session.query(Memory).count()
+        session.close()
+        diagnostics["services"]["database"] = {
+            "status": "✅ OK",
+            "memory_records": memory_count
+        }
+    except Exception as e:
+        diagnostics["services"]["database"] = {
+            "status": "❌ ERROR",
+            "error": str(e)
+        }
+        diagnostics["errors"].append(f"Database error: {e}")
+
+    return diagnostics
+
+
+@app.get("/api/memory/status")
+async def memory_status():
+    """Get memory system status and collection statistics."""
+    try:
+        status = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "collections": server_state.vector_store.get_all_stats(),
+            "database_memories": None,
+            "health": "✅ OK"
+        }
+
+        # Get database memory info
+        session = server_state.db_manager.get_session()
+        memories = session.query(Memory).all()
+        status["database_memories"] = {
+            "total": len(memories),
+            "with_embeddings": len([m for m in memories if m.embedding_id]),
+            "with_errors": len([m for m in memories if m.tags and any("indexing_error" in tag for tag in m.tags)]),
+        }
+        session.close()
+
+        return status
+    except Exception as e:
+        logger.error(f"Memory status check failed: {e}")
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "health": f"❌ ERROR: {e}"
+        }
 
 
 @app.post("/report_results", response_model=ReportResultsResponse)

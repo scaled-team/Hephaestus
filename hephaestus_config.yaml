@@ -61,7 +61,7 @@ llm:
       max_tokens: 4000
 agents:
   default_cli_tool: opencode
-  cli_model: anthropic/claude-haiku-4.5
+  cli_model: anthropic/claude-haiku-4-5
   tmux_session_prefix: agent
   health_check_interval: 60
   max_health_failures: 3

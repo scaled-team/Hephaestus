@@ -453,6 +453,18 @@ class WorktreeManager:
 
                 logger.info(f"  - Total files in worktree: {len(all_files)}")
                 logger.info(f"  - Sample files: {all_files[:10]}{'...' if len(all_files) > 10 else ''}")
+
+                # Copy opencode.json configuration into worktree for agent CLI access
+                opencode_config_src = Path("/app/opencode.json")
+                if opencode_config_src.exists():
+                    opencode_config_dest = worktree_path / "opencode.json"
+                    try:
+                        shutil.copy2(opencode_config_src, opencode_config_dest)
+                        logger.info(f"[WORKTREE] Copied opencode.json to worktree for CLI access")
+                    except Exception as e:
+                        logger.warning(f"[WORKTREE] Failed to copy opencode.json: {e}")
+                else:
+                    logger.warning(f"[WORKTREE] opencode.json not found at {opencode_config_src}")
             else:
                 logger.error(f"[WORKTREE] Worktree directory does not exist after creation!")
 

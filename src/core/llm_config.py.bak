@@ -167,7 +167,7 @@ class SimpleConfig:
             if assignment.openrouter_provider:
                 return f"{assignment.openrouter_provider}/{assignment.model}"
             return assignment.model
-        return self.get('llm.model', 'claude-haiku-4.5-20251001')
+        return self.get('llm.model', 'gpt-4-turbo-preview')
 
     @property
     def embedding_model(self) -> str:

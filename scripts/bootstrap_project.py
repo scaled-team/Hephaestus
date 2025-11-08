@@ -8,20 +8,22 @@ What this script does:
 - Poll backend health
 - Programmatically create the Phase 1 task against your PRD
 
-Usage example:
+Usage example (inside Docker):
 
-  .venv/bin/python scripts/bootstrap_project.py \
-    --working-dir "/abs/path/to/project" \
-    --worktrees "/tmp/hephaestus_worktrees" \
-    --prd "/abs/path/to/project/PRD.md" \
+  docker compose exec hephaestus-server python scripts/bootstrap_project.py \
+    --working-dir "./projects/stockton-ai" \
+    --worktrees "./projects/stockton-ai-worktrees" \
+    --prd "./projects/stockton-ai/Stockton-AI-PRD.md" \
     --drop-db --clean-qdrant
 
 Requirements:
-- Qdrant running on localhost:6333
-- Run from the Hephaestus repo root
-- Use the project virtualenv (e.g., .venv/bin/python)
+- Docker services running (hephaestus-server, qdrant)
+- Run from inside Docker container for proper service name resolution
 
-Note: Uses default database (./hephaestus.db) for simplicity.
+Environment Variables:
+- QDRANT_URL: Qdrant URL (default: http://qdrant:6333)
+- BASE_URL: Backend URL (default: http://hephaestus-server:8000)
+- DATABASE_PATH: Database path (default: /app/data/hephaestus.db)
 """
 
 from __future__ import annotations
@@ -51,23 +53,31 @@ def spawn(cmd: list[str], env: Dict[str, str] | None = None) -> subprocess.Popen
 
 def ensure_qdrant() -> None:
     """Check Qdrant health; raise if not reachable."""
+    # Use QDRANT_URL from environment or default to Docker service name
+    qdrant_url = os.getenv("QDRANT_URL", "http://qdrant:6333")
     try:
-        r = requests.get("http://127.0.0.1:6333/", timeout=3)
+        r = requests.get(qdrant_url, timeout=3)
         if r.status_code != 200:
             raise RuntimeError(
-                f"Qdrant returned status {r.status_code}. Start it with:\n"
-                "  docker run -d -p 6333:6333 qdrant/qdrant"
+                f"Qdrant returned status {r.status_code} at {qdrant_url}.\n"
+                "Ensure Qdrant service is running in Docker."
             )
+        print(f"[qdrant] Connected to Qdrant at {qdrant_url} ✓")
     except Exception as e:
         raise RuntimeError(
-            "Qdrant is not reachable on http://127.0.0.1:6333.\n"
-            "Start it with: docker run -d -p 6333:6333 qdrant/qdrant"
+            f"Qdrant is not reachable at {qdrant_url}.\n"
+            "Ensure Qdrant service is running in Docker."
         ) from e
 
 
-def poll_backend(timeout: int = 60, base_url: str = "http://127.0.0.1:8000") -> None:
+def poll_backend(timeout: int = 60, base_url: str = None) -> None:
     """Wait until backend /health is healthy or timeout."""
+    # Use BASE_URL from environment or default to Docker service name
+    if base_url is None:
+        base_url = os.getenv("BASE_URL", "http://hephaestus-server:8000")
+
     start = time.time()
+    print(f"[health] Waiting for backend at {base_url} to become healthy...")
     while time.time() - start < timeout:
         try:
             r = requests.get(f"{base_url}/health", timeout=2)
@@ -77,19 +87,27 @@ def poll_backend(timeout: int = 60, base_url: str = "http://127.0.0.1:8000") -> 
         except Exception:
             pass
         time.sleep(0.5)
-    raise RuntimeError("Backend did not become healthy within timeout")
+    raise RuntimeError(f"Backend at {base_url} did not become healthy within timeout")
 
 
 def create_phase1_task(
     prd_path: str,
     project_name: str,
-    base_url: str = "http://127.0.0.1:8000",
+    base_url: str = None,
     agent_id: str = "main-session-agent",
 ) -> None:
     """Create the Phase 1 task programmatically."""
+    # Use BASE_URL from environment or default to Docker service name
+    if base_url is None:
+        base_url = os.getenv("BASE_URL", "http://hephaestus-server:8000")
+
+    # Agent runs in worktree where PRD is always at: PRD.md (generic name)
+    # Note: Worktree manager creates PRD.md symlink, not the original filename
+    prd_filename = "PRD.md"
+
     description = (
         "Phase 1: Analyze PRD at "
-        f"{prd_path} for {project_name}. "
+        f"{prd_filename} for {project_name}. "
         "Extract functional and non-functional requirements, identify components, "
         "map dependencies with proper blocking relationships, create infrastructure "
         "tickets first, save key decisions/warnings to memory, and create Phase 2 "
@@ -179,7 +197,8 @@ def main() -> None:
     proc = spawn(run_args, env=env)
 
     # 4) Poll backend health and create Phase 1 task
-    base_url = f"http://127.0.0.1:{args.mcp_port}"
+    # Use environment variable or default to Docker service name
+    base_url = os.getenv("BASE_URL", f"http://hephaestus-server:{args.mcp_port}")
     poll_backend(timeout=60, base_url=base_url)
 
     project_name = Path(args.working_dir).name.replace("-", "_")

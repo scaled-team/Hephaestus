@@ -23,12 +23,12 @@ Usage:
 """
 
 # Import phase definitions
-from example_workflows.prd_to_software.phase_1_requirements_analysis import PHASE_1_REQUIREMENTS_ANALYSIS
-from example_workflows.prd_to_software.phase_2_plan_and_implementation import PHASE_2_PLAN_AND_IMPLEMENTATION
-from example_workflows.prd_to_software.phase_3_validate_and_document import PHASE_3_VALIDATE_AND_DOCUMENT
+from src.workflow.prd_to_software.phase_1_requirements_analysis import PHASE_1_REQUIREMENTS_ANALYSIS
+from src.workflow.prd_to_software.phase_2_plan_and_implementation import PHASE_2_PLAN_AND_IMPLEMENTATION
+from src.workflow.prd_to_software.phase_3_validate_and_document import PHASE_3_VALIDATE_AND_DOCUMENT
 
 # Import workflow configuration
-from example_workflows.prd_to_software.board_config import PRD_WORKFLOW_CONFIG
+from src.workflow.prd_to_software.board_config import PRD_WORKFLOW_CONFIG
 
 # Export phase list
 PRD_PHASES = [

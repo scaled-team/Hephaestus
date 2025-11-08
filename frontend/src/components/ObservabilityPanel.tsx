@@ -14,8 +14,11 @@ import {
   Search
 } from 'lucide-react';
 import PanelSearch, { HighlightedContent } from './PanelSearch';
+import VoiceControls from './VoiceControls';
 import { formatDistanceToNow } from 'date-fns';
 import { Agent } from '@/types';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { useAudioAlerts } from '@/hooks/useAudioAlerts';
 
 interface OutputData {
   output: string;
@@ -57,6 +60,11 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
   const outputRef = useRef<HTMLPreElement>(null);
   const lastScrollPosition = useRef(0);
   const initialScrollDone = useRef(false);
+  const lastOutputRef = useRef('');
+
+  // Voice features
+  const { speak } = useTextToSpeech({ rate: 1.0, volume: 0.8 });
+  const { playSound } = useAudioAlerts(true, 0.8);
 
   // Auto-scroll to bottom on initial mount
   useEffect(() => {
@@ -74,6 +82,27 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
       element.scrollTop = element.scrollHeight;
     }
   }, [output.output, autoScroll, isPaused, localPaused]);
+
+  // Detect and alert on errors/warnings
+  useEffect(() => {
+    if (output.output && output.output !== lastOutputRef.current) {
+      const newContent = output.output.substring(lastOutputRef.current.length);
+      lastOutputRef.current = output.output;
+
+      // Check for errors
+      if (newContent.toUpperCase().includes('ERROR')) {
+        playSound('error');
+        const errorLine = newContent.split('\n').find((line) => line.toUpperCase().includes('ERROR'));
+        if (errorLine) {
+          speak(`Error: ${errorLine.substring(0, 100)}`);
+        }
+      } else if (newContent.toUpperCase().includes('WARN')) {
+        playSound('warning');
+      } else if (newContent.toUpperCase().includes('SUCCESS') || newContent.toUpperCase().includes('COMPLETE')) {
+        playSound('success');
+      }
+    }
+  }, [output.output, speak, playSound]);
 
   // Handle scroll events
   const handleScroll = useCallback(() => {
@@ -244,6 +273,27 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
         </div>
 
         <div className="flex items-center space-x-1">
+          {/* Voice Controls */}
+          <div className="border-r border-gray-300 pr-1">
+            <VoiceControls
+              onCommandExecuted={(action, params) => {
+                if (action === 'readOutput') {
+                  speak(output.output.substring(0, 500));
+                } else if (action === 'readError') {
+                  const errorLine = output.output.split('\n').find((line) =>
+                    line.toUpperCase().includes('ERROR')
+                  );
+                  if (errorLine) {
+                    speak(errorLine);
+                  } else {
+                    speak('No errors found');
+                  }
+                }
+              }}
+              onError={(error) => console.error('Voice command error:', error)}
+            />
+          </div>
+
           <button
             onClick={copyToClipboard}
             className="p-1 rounded hover:bg-gray-200 transition-colors"
