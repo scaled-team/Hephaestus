@@ -79,14 +79,21 @@ export const useMultiAgentOutput = (
     fetchQueuesRef.current.add(agentId);
 
     try {
-      setOutputs(prev => ({
-        ...prev,
-        [agentId]: {
-          ...prev[agentId],
-          isLoading: true,
-          error: null,
-        },
-      }));
+      // Only show loading if we don't have any data yet
+      const hasExistingData = !!lastOutputsRef.current[agentId];
+
+      if (!hasExistingData) {
+        // First load - show spinner
+        setOutputs(prev => ({
+          ...prev,
+          [agentId]: {
+            ...prev[agentId],
+            isLoading: true,
+            error: null,
+          },
+        }));
+      }
+      // On refresh/update, don't set isLoading - just update silently
 
       const result = await apiService.getAgentOutput(agentId);
 

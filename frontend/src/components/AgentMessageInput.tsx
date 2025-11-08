@@ -18,32 +18,62 @@ const AgentMessageInput: React.FC<AgentMessageInputProps> = ({
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(propAudioEnabled);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [sendStatus, setSendStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [sendError, setSendError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { sendMessage, isConnected } = useWebSocket();
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!message.trim() || !isConnected) {
+    if (!message.trim()) {
+      setSendError('Message cannot be empty');
+      setSendStatus('error');
+      return;
+    }
+
+    if (!isConnected) {
+      setSendError('Not connected to server');
+      setSendStatus('error');
       return;
     }
 
     setIsSending(true);
+    setSendStatus('idle');
+    setSendError(null);
+
     try {
       // Send message via WebSocket
-      sendMessage('agent_message', {
+      await sendMessage('agent_message', {
         agent_id: agentId,
         message: message.trim(),
       });
 
-      // Clear input
+      // Clear input and show success
       setMessage('');
+      setSendStatus('success');
+      setSendError(null);
       inputRef.current?.focus();
+
+      // Reset success status after 2 seconds
+      setTimeout(() => setSendStatus('idle'), 2000);
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to send message';
       console.error('Failed to send message:', error);
+      setSendStatus('error');
+      setSendError(errorMsg);
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter to submit, Shift+Enter for new line
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e as any);
+    }
+    // Shift+Enter allows natural newline behavior
   };
 
   return (
@@ -72,14 +102,22 @@ const AgentMessageInput: React.FC<AgentMessageInputProps> = ({
         </button>
 
         {/* Message input */}
-        <input
+        <textarea
           ref={inputRef}
-          type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Send a message to the agent..."
+          onKeyDown={handleKeyDown}
+          placeholder="Send a message to the agent... (Shift+Enter for new line)"
           disabled={!isConnected || isSending}
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          rows={1}
+          className={`flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed resize-none font-mono text-sm transition-colors ${
+            sendStatus === 'success'
+              ? 'border-green-500 dark:border-green-400 focus:ring-green-500 dark:focus:ring-green-400'
+              : sendStatus === 'error'
+              ? 'border-red-500 dark:border-red-400 focus:ring-red-500 dark:focus:ring-red-400'
+              : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400'
+          }`}
+          style={{ minHeight: '40px', maxHeight: '120px', overflow: 'auto' }}
         />
 
         {/* Send button */}
@@ -97,6 +135,18 @@ const AgentMessageInput: React.FC<AgentMessageInputProps> = ({
       {!isConnected && (
         <div className="mt-2 text-xs text-red-600 dark:text-red-400">
           Not connected to server
+        </div>
+      )}
+      {sendStatus === 'success' && (
+        <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center">
+          <span className="inline-block w-1.5 h-1.5 bg-green-600 dark:bg-green-400 rounded-full mr-1.5"></span>
+          Message sent successfully
+        </div>
+      )}
+      {sendStatus === 'error' && sendError && (
+        <div className="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center">
+          <span className="inline-block w-1.5 h-1.5 bg-red-600 dark:bg-red-400 rounded-full mr-1.5"></span>
+          {sendError}
         </div>
       )}
     </form>

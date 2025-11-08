@@ -179,24 +179,24 @@ const TicketGraph: React.FC<TicketGraphProps> = ({ workflowId, onNavigateToSearc
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
       </div>
     );
   }
 
   if (!tickets || !tickets.length) {
     return (
-      <div className="flex items-center justify-center h-[600px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+      <div className="flex items-center justify-center h-[600px] bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
         <div className="text-center">
-          <p className="text-gray-500 text-lg mb-2">No tickets found</p>
-          <p className="text-gray-400 text-sm">Create some tickets to see the dependency graph</p>
+          <p className="text-gray-500 dark:text-gray-400 text-lg mb-2 font-semibold">No tickets found</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">Create some tickets to see the dependency graph</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-[700px] bg-gray-50 rounded-lg border relative">
+    <div className="h-[700px] bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 relative">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -220,70 +220,70 @@ const TicketGraph: React.FC<TicketGraphProps> = ({ workflowId, onNavigateToSearc
             return '#3b82f6';
           }}
           maskColor="rgba(0, 0, 0, 0.1)"
-          className="bg-white border rounded"
+          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
         />
 
         {/* Control Panel */}
-        <Panel position="top-right" className="bg-white p-4 rounded-lg shadow-lg space-y-3">
-          <div className="font-semibold text-sm text-gray-900 mb-2">Layout</div>
+        <Panel position="top-right" className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 space-y-3">
+          <div className="font-bold text-sm text-gray-900 dark:text-white mb-2">Layout</div>
           <div className="flex space-x-2">
             <button
               onClick={() => onLayout('TB')}
-              className={`px-3 py-1 text-xs rounded ${
+              className={`px-3 py-1 text-xs rounded font-medium transition-colors ${
                 layoutDirection === 'TB'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
               Top-Down
             </button>
             <button
               onClick={() => onLayout('LR')}
-              className={`px-3 py-1 text-xs rounded ${
+              className={`px-3 py-1 text-xs rounded font-medium transition-colors ${
                 layoutDirection === 'LR'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
               Left-Right
             </button>
           </div>
 
-          <div className="border-t pt-3">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={showResolved}
                 onChange={(e) => setShowResolved(e.target.checked)}
-                className="rounded"
+                className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
               />
-              <span className="text-xs text-gray-700">Show Resolved</span>
+              <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">Show Resolved</span>
             </label>
           </div>
         </Panel>
 
         {/* Legend Panel */}
-        <Panel position="bottom-right" className="bg-white p-4 rounded-lg shadow-lg">
-          <div className="font-semibold text-sm text-gray-900 mb-3">Legend</div>
+        <Panel position="bottom-right" className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <div className="font-bold text-sm text-gray-900 dark:text-white mb-3">Legend</div>
           <div className="space-y-2 text-xs">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-gray-700">Resolved ({stats.resolvedCount})</span>
+              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-gray-700 dark:text-gray-300 font-medium">Resolved ({stats.resolvedCount})</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Lock className="w-4 h-4 text-red-600" />
-              <span className="text-gray-700">Blocked ({stats.blockedCount})</span>
+              <Lock className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <span className="text-gray-700 dark:text-gray-300 font-medium">Blocked ({stats.blockedCount})</span>
             </div>
             <div className="flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-orange-600" />
-              <span className="text-gray-700">Blocks Others ({stats.blockersCount})</span>
+              <AlertCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              <span className="text-gray-700 dark:text-gray-300 font-medium">Blocks Others ({stats.blockersCount})</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Circle className="w-4 h-4 text-blue-600" />
-              <span className="text-gray-700">Normal ({stats.normalCount})</span>
+              <Circle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-gray-700 dark:text-gray-300 font-medium">Normal ({stats.normalCount})</span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t text-xs text-gray-500">
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
             Click node to view details<br />
             Drag to pan • Scroll to zoom
           </div>

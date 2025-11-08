@@ -111,9 +111,7 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
     const statusConfig = getStatusConfig(agent.status);
 
     return (
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
+      <div
         className={`px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors ${
           isVisible ? 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40' : ''
         }`}
@@ -179,7 +177,7 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   };
 

@@ -133,17 +133,13 @@ const ObservabilityGridLayout: React.FC<ObservabilityGridLayoutProps> = ({
 
           return (
             <div key={agentId} className="grid-item relative">
+              <div className="drag-handle absolute top-0 left-0 right-0 cursor-grab active:cursor-grabbing z-10" style={{height: '36px'}} title="Drag to reposition panel" />
               <ObservabilityPanel
                 agent={agent}
                 output={agentOutputs[agentId]}
                 onToggleFullscreen={() => onToggleFullscreen(agentId)}
                 onHide={() => onToggleAgent(agentId)}
                 isPaused={globalPaused}
-              />
-              {/* Drag handle - positioned at top center for better accessibility */}
-              <div
-                className="drag-handle absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 cursor-grab active:cursor-grabbing opacity-0 hover:opacity-100 transition-opacity z-10 rounded-b-full bg-gray-400 dark:bg-gray-600"
-                title="Drag to reposition panel"
               />
             </div>
           );

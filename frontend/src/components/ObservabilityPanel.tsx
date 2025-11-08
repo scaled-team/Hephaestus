@@ -224,12 +224,14 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
           <pre
             ref={outputRef}
             onScroll={handleScroll}
-            className="absolute inset-0 p-4 overflow-auto font-mono text-xs text-green-400 whitespace-pre-wrap break-words w-full"
+            className="absolute inset-0 p-4 overflow-auto font-mono text-green-400 whitespace-pre-wrap break-words w-full"
             style={{
-              lineHeight: '1.4',
+              lineHeight: '1.5',
+              fontSize: '16.9px',
               fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
               wordBreak: 'break-word',
-              overflowWrap: 'anywhere'
+              overflowWrap: 'anywhere',
+              letterSpacing: '0.3px'
             }}
           >
             {output.output || 'Waiting for output...'}
@@ -351,12 +353,13 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
           <pre
             ref={outputRef}
             onScroll={handleScroll}
-            className="absolute inset-0 p-2 overflow-auto font-mono text-xs text-green-400 whitespace-pre-wrap break-words w-full"
+            className="absolute inset-0 p-3 overflow-auto font-mono text-green-400 whitespace-pre-wrap break-words w-full"
             style={{
-              lineHeight: '1.3',
-              fontSize: '10px',
+              lineHeight: '1.5',
+              fontSize: '15.6px',
               wordBreak: 'break-word',
-              overflowWrap: 'anywhere'
+              overflowWrap: 'anywhere',
+              letterSpacing: '0.3px'
             }}
           >
             {output.output || 'No output yet...'}

@@ -15,6 +15,7 @@ import ObservabilitySidebar from '@/components/ObservabilitySidebar';
 import CustomLayoutDialog from '@/components/CustomLayoutDialog';
 import ObservabilityGridLayout from '@/components/ObservabilityGridLayout';
 import LayoutManager from '@/components/LayoutManager';
+import MonitorTerminal from '@/components/MonitorTerminal';
 import { useLayoutPersistence } from '@/hooks/useLayoutPersistence';
 import { useMultiAgentOutput } from '@/hooks/useMultiAgentOutput';
 
@@ -56,6 +57,8 @@ const Observability: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [fullscreenAgent, setFullscreenAgent] = useState<string | null>(null);
   const [showCustomLayoutDialog, setShowCustomLayoutDialog] = useState(false);
+  const [showMonitor, setShowMonitor] = useState(true);
+  const [fullscreenMonitor, setFullscreenMonitor] = useState(false);
 
   // Fetch agents data - only fetch on mount and explicit WebSocket lifecycle events
   const { data: agents = [], isLoading, error, refetch } = useQuery({
@@ -370,67 +373,87 @@ const Observability: React.FC = () => {
       />
 
       {/* Main Content */}
-      <div className="flex flex-1 min-h-0">
-        {/* Sidebar */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: 280 }}
-              exit={{ width: 0 }}
-              className="bg-white dark:bg-gray-800 border-r dark:border-gray-700 shadow-sm overflow-hidden"
-            >
-              <ObservabilitySidebar
-                agents={filteredAgents}
-                visibleAgents={visibleAgents}
-                onToggleAgent={toggleAgentVisibility}
-                onSelectAll={() => setVisibleAgents(new Set(agents.map(a => a.id)))}
-                onDeselectAll={() => {
-                  setVisibleAgents(new Set());
-                  setGridLayout(current => ({ ...current, panels: [] }));
-                }}
+      <div className="flex flex-1 min-h-0 flex-col">
+        {/* Monitor Terminal */}
+        {showMonitor && (
+          <div className="h-40 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-hidden p-2">
+            {fullscreenMonitor ? (
+              <MonitorTerminal
+                isFullscreen={true}
+                onToggleFullscreen={() => setFullscreenMonitor(false)}
+                onClose={() => setShowMonitor(false)}
               />
-            </motion.div>
-          )}
-        </AnimatePresence>
+            ) : (
+              <MonitorTerminal
+                onToggleFullscreen={() => setFullscreenMonitor(true)}
+              />
+            )}
+          </div>
+        )}
 
-        {/* Grid Area */}
-        <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-hidden">
-          {visibleAgents.size === 0 ? (
-            <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-900">
-              <div className="text-center">
-                <Monitor className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
-                <p className="text-lg font-medium text-gray-700 dark:text-gray-300">No agents selected</p>
-                <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">
-                  {sidebarOpen
-                    ? "Select agents from the sidebar to monitor their output"
-                    : "Open the sidebar to select agents"}
-                </p>
+        {/* Agents Grid Area */}
+        <div className="flex flex-1 min-h-0">
+          {/* Sidebar */}
+          <AnimatePresence>
+            {sidebarOpen && (
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: 280 }}
+                exit={{ width: 0 }}
+                className="bg-white dark:bg-gray-800 border-r dark:border-gray-700 shadow-sm overflow-hidden"
+              >
+                <ObservabilitySidebar
+                  agents={filteredAgents}
+                  visibleAgents={visibleAgents}
+                  onToggleAgent={toggleAgentVisibility}
+                  onSelectAll={() => setVisibleAgents(new Set(agents.map(a => a.id)))}
+                  onDeselectAll={() => {
+                    setVisibleAgents(new Set());
+                    setGridLayout(current => ({ ...current, panels: [] }));
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Grid Area */}
+          <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-hidden">
+            {visibleAgents.size === 0 ? (
+              <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-900">
+                <div className="text-center">
+                  <Monitor className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
+                  <p className="text-lg font-medium text-gray-700 dark:text-gray-300">No agents selected</p>
+                  <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">
+                    {sidebarOpen
+                      ? "Select agents from the sidebar to monitor their output"
+                      : "Open the sidebar to select agents"}
+                  </p>
+                </div>
               </div>
-            </div>
-          ) : fullscreenAgent ? (
-            // Fullscreen view
-            <ObservabilityPanel
-              agent={agents.find(a => a.id === fullscreenAgent)!}
-              output={agentOutputs[fullscreenAgent]}
-              isFullscreen={true}
-              onClose={() => setFullscreenAgent(null)}
-              isPaused={globalPaused}
-            />
-          ) : (
-            // Grid view with drag and drop
-            <ObservabilityGridLayout
-              agents={agents}
-              visibleAgents={visibleAgents}
-              agentOutputs={agentOutputs}
-              cols={gridLayout.cols}
-              rows={gridLayout.rows}
-              globalPaused={globalPaused}
-              sidebarOpen={sidebarOpen}
-              onToggleFullscreen={setFullscreenAgent}
-              onToggleAgent={toggleAgentVisibility}
-            />
-          )}
+            ) : fullscreenAgent ? (
+              // Fullscreen view
+              <ObservabilityPanel
+                agent={agents.find(a => a.id === fullscreenAgent)!}
+                output={agentOutputs[fullscreenAgent]}
+                isFullscreen={true}
+                onClose={() => setFullscreenAgent(null)}
+                isPaused={globalPaused}
+              />
+            ) : (
+              // Grid view with drag and drop
+              <ObservabilityGridLayout
+                agents={agents}
+                visibleAgents={visibleAgents}
+                agentOutputs={agentOutputs}
+                cols={gridLayout.cols}
+                rows={gridLayout.rows}
+                globalPaused={globalPaused}
+                sidebarOpen={sidebarOpen}
+                onToggleFullscreen={setFullscreenAgent}
+                onToggleAgent={toggleAgentVisibility}
+              />
+            )}
+          </div>
         </div>
       </div>
 
