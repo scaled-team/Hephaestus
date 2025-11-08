@@ -22,7 +22,7 @@
       "environment": {
         "QDRANT_URL": "http://qdrant:6333",
         "COLLECTION_NAME": "hephaestus_agent_memories",
-        "OPENAI_API_KEY": "{env:OPENAI_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "EMBEDDING_MODEL": "text-embedding-3-large"
       },
       "enabled": true
