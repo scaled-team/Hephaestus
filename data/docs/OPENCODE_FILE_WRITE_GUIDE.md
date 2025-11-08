@@ -14,10 +14,11 @@ The Hephaestus Docker containers have these volume mounts available for writing:
 
 | Mount Point | Docker Path | Purpose | Status |
 |------------|------------|---------|--------|
-| `./data/` | `/app/data/` | Database, cached data | ✅ Writable |
-| `./logs/` | `/app/logs/` | Log files | ✅ Writable |
-| `./docs/` | `/app/docs/` | Documentation | ✅ Writable |
-| `./projects/` | `/app/projects/` | Project workspaces | ✅ Writable |
+| `./data/` | `/app/data/` | Database, logs, docs, projects, worktrees | ✅ Writable |
+| `./data/logs/` | `/app/data/logs/` | Log files | ✅ Writable |
+| `./data/docs/` | `/app/data/docs/` | Documentation | ✅ Writable |
+| `./data/projects/` | `/app/data/projects/` | Project workspaces | ✅ Writable |
+| `./data/worktrees/` | `/app/data/worktrees/` | Agent git worktrees | ✅ Writable |
 | `./src/` | `/app/src/` | Source code | ✅ Writable |
 | `./scripts/` | `/app/scripts/` | Script files | ✅ Writable |
 
@@ -343,10 +344,11 @@ print(f"✅ Cache saved to: {cache_file}")
 
 | Scenario | Container Path | Host Path | Writable? |
 |----------|---|---|---|
-| Log files | `/app/logs/` | `./logs/` | ✅ Yes |
-| Data/cache | `/app/data/` | `./data/` | ✅ Yes |
-| Documentation | `/app/docs/` | `./docs/` | ✅ Yes |
-| Project files | `/app/projects/` | `./projects/` | ✅ Yes |
+| All data | `/app/data/` | `./data/` | ✅ Yes |
+| Log files | `/app/data/logs/` | `./data/logs/` | ✅ Yes |
+| Documentation | `/app/data/docs/` | `./data/docs/` | ✅ Yes |
+| Project files | `/app/data/projects/` | `./data/projects/` | ✅ Yes |
+| Worktrees | `/app/data/worktrees/` | `./data/worktrees/` | ✅ Yes |
 | Source code | `/app/src/` | `./src/` | ✅ Yes |
 | Scripts | `/app/scripts/` | `./scripts/` | ✅ Yes |
 | Config files | `/app/opencode.json` | `./opencode.json` | 🔒 Read-only |

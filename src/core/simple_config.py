@@ -140,7 +140,7 @@ class Config:
 
         # General settings
         self.debug = False
-        self.docs_path = Path("./docs")
+        self.docs_path = Path("./data/docs")
 
         # Diagnostic agent settings
         diagnostic = config.get('diagnostic_agent', {})

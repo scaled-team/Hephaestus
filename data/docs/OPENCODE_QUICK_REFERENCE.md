@@ -5,12 +5,13 @@
 **When agents write files in OpenCode Docker, use ONLY these paths:**
 
 ```bash
-/app/data/      ← Database, cache, data
-/app/logs/      ← Log files, metrics
-/app/docs/      ← Documentation, reports
-/app/projects/  ← Project workspaces
-/app/src/       ← Source code
-/app/scripts/   ← Script files
+/app/data/           ← Database, cache, logs, docs, projects, worktrees
+/app/data/logs/      ← Log files, metrics
+/app/data/docs/      ← Documentation, reports
+/app/data/projects/  ← Project workspaces
+/app/data/worktrees/ ← Agent git worktrees
+/app/src/            ← Source code
+/app/scripts/        ← Script files
 ```
 
 **NEVER write to:**
@@ -30,7 +31,7 @@
 from pathlib import Path
 import json
 
-output_dir = "/app/logs/myagent"
+output_dir = "/app/data/logs/myagent"
 Path(output_dir).mkdir(parents=True, exist_ok=True)
 
 output_file = f"{output_dir}/output.json"

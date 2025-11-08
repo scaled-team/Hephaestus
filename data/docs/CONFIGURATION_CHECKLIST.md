@@ -46,10 +46,8 @@ Volume mounts configured for development:
 
 ```yaml
 ✅ volumes:
-     # Data persistence
+     # Data persistence (all data organized under ./data/)
      - ./data:/app/data
-     - ./logs:/app/logs
-     - ./docs:/app/docs
 
      # Source code (hot-reloading)
      - ./src:/app/src
@@ -122,8 +120,8 @@ ticket_fts (and 17 more...)
 ## ✅ Project Structure
 
 ### Correct Paths Configured
-- ✅ Project root: `/Users/nova/Sites/bench/Hephaestus/projects/stockton-ai`
-- ✅ Git repository: `/Users/nova/Sites/bench/Hephaestus/projects/stockton-ai`
+- ✅ Project root: `/Users/nova/Sites/bench/Hephaestus/data/projects/stockton-ai`
+- ✅ Git repository: `/Users/nova/Sites/bench/Hephaestus/data/projects/stockton-ai`
 - ✅ Database: `/Users/nova/Sites/bench/Hephaestus/data/hephaestus.db`
 - ✅ Worktree base: `/tmp/hephaestus_worktrees`
 - ✅ Phases folder: `./src/workflow/prd_to_software`

@@ -18,10 +18,10 @@ paths:
   database: ./data/hephaestus.db
   phases_folder: ./src/workflow/prd_to_software
   worktree_base: /tmp/hephaestus_worktrees
-  project_root: ./projects/stockton-ai    # ✅ Relative path (Docker compatible)
+  project_root: ./data/projects/stockton-ai    # ✅ Relative path (Docker compatible)
 
 git:
-  main_repo_path: ./projects/stockton-ai   # ✅ Matches project_root
+  main_repo_path: ./data/projects/stockton-ai   # ✅ Matches project_root
   worktree_branch_prefix: agent-
   auto_commit: true
   conflict_resolution: newest_file_wins
@@ -159,9 +159,7 @@ server: {
 | Type | Mount | Purpose |
 |------|-------|---------|
 | Bind | `./frontend/src` | Hot-reload frontend code |
-| Bind | `./projects` | Project workspaces |
-| Bind | `./data` | Application data |
-| Bind | `./logs` | Service logs |
+| Bind | `./data` | Application data (includes logs, docs, projects, worktrees) |
 | Named | `frontend_node_modules` | Node packages cache |
 | Named | `qdrant_data` | Vector store data |
 

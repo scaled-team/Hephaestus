@@ -68,3 +68,4 @@ frontend/node_modules/
 # Tmux
 .tmux/
 data/qdrant_storage/
+data/worktrees/

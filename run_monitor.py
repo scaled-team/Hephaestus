@@ -30,7 +30,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("logs/monitor.log", mode="a")
+        logging.FileHandler("data/logs/monitor.log", mode="a")
     ]
 )
 
@@ -167,7 +167,7 @@ async def main():
 
 if __name__ == "__main__":
     # Ensure logs directory exists
-    Path("logs").mkdir(exist_ok=True)
+    Path("data/logs").mkdir(parents=True, exist_ok=True)
 
     try:
         asyncio.run(main())

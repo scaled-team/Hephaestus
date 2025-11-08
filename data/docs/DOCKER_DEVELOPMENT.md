@@ -10,12 +10,10 @@ The docker-compose.yml is configured for efficient development with the followin
 
 ### 1. Data Persistence
 ```yaml
-- ./data:/app/data           # SQLite database and persistent data
-- ./logs:/app/logs           # Application logs
-- ./docs:/app/docs           # Documentation files
+- ./data:/app/data           # All persistent data (database, logs, docs, projects, worktrees)
 ```
 
-**Purpose**: Persist data across container restarts and maintain development state.
+**Purpose**: Persist data across container restarts and maintain development state. All data is now organized under the `./data/` directory.
 
 ### 2. Source Code (Hot-Reloading)
 ```yaml

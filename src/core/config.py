@@ -236,7 +236,7 @@ class Settings(BaseSettings):
         description="Logging level",
     )
     docs_path: Path = Field(
-        default=Path("./docs"),
+        default=Path("./data/docs"),
         description="Path to documentation folder for ingestion",
     )
 

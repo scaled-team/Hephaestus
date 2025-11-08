@@ -11,9 +11,9 @@ What this script does:
 Usage example (inside Docker):
 
   docker compose exec hephaestus-server python scripts/bootstrap_project.py \
-    --working-dir "./projects/stockton-ai" \
-    --worktrees "./projects/stockton-ai-worktrees" \
-    --prd "./projects/stockton-ai/Stockton-AI-PRD.md" \
+    --working-dir "./data/projects/stockton-ai" \
+    --worktrees "./data/projects/stockton-ai-worktrees" \
+    --prd "./data/projects/stockton-ai/Stockton-AI-PRD.md" \
     --drop-db --clean-qdrant
 
 Requirements:

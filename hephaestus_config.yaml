@@ -6,9 +6,9 @@ paths:
   database: ./data/hephaestus.db
   phases_folder: ./src/workflow/prd_to_software
   worktree_base: /tmp/hephaestus_worktrees
-  project_root: ./projects/stockton-ai
+  project_root: ./data/projects/stockton-ai
 git:
-  main_repo_path: ./projects/stockton-ai
+  main_repo_path: ./data/projects/stockton-ai
   worktree_branch_prefix: agent-
   auto_commit: true
   conflict_resolution: newest_file_wins

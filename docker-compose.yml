@@ -7,12 +7,19 @@
 # and frontend development server.
 #
 # CRITICAL: OpenCode agents running in these containers can ONLY write to:
-# - /app/data/    (host: ./data/)
-# - /app/logs/    (host: ./logs/)
-# - /app/docs/    (host: ./docs/)
-# - /app/projects/ (host: ./projects/)
+# - /app/data/    (host: ./data/ - contains ALL persistent data including logs, docs, worktrees, projects)
 # - /app/src/     (host: ./src/)
 # - /app/scripts/ (host: ./scripts/)
+#
+# FILE ORGANIZATION STRUCTURE:
+# ./data/
+#   ├── hephaestus.db              (Main database)
+#   ├── hephaestus.db.backup*      (Database backups)
+#   ├── docs/                       (Generated documentation & reports)
+#   ├── logs/                       (Agent execution logs, organized by agent ID)
+#   ├── projects/                   (Project workspaces)
+#   ├── worktrees/                  (Agent git worktrees)
+#   └── qdrant_storage/             (Vector database persistence)
 #
 # Any attempt to write outside these paths will fail with "Write outside of project scope" error.
 # See OPENCODE_FILE_WRITE_GUIDE.md and OPENCODE_QUICK_REFERENCE.md for details.
@@ -38,12 +45,9 @@ services:
   #
   # File Write Rules for OpenCode Agents:
   # Only the following paths are writable. Any other path will cause errors:
-  # - /app/data/    → Database files, cached data, agent memories
-  # - /app/logs/    → Log files, execution records, error logs
-  # - /app/docs/    → Documentation, reports, analysis output
-  # - /app/projects/ → Project workspaces, build artifacts
-  # - /app/src/     → Source code modifications, new modules
-  # - /app/scripts/ → Script files, automation tools
+  # - /app/data/         → Database files, cached data, agent memories, logs, docs, projects, worktrees
+  # - /app/src/          → Source code modifications, new modules
+  # - /app/scripts/      → Script files, automation tools
   # ───────────────────────────────────────────────────────────────────────────
   hephaestus-server:
     build: .
@@ -53,15 +57,16 @@ services:
       - "8000:8000"
     volumes:
       # ┌─ DATA PERSISTENCE MOUNTS (Writable by agents) ─────────────────────
-      # Database, cache, and data files that persist between runs
-      - ./data:/app/data              # ✅ Writable - Database, cache, agent data
-      - ./logs:/app/logs              # ✅ Writable - All log files
-      - ./docs:/app/docs              # ✅ Writable - Documentation, reports
+      # All persistent data consolidated in ./data/ folder
+      - ./data:/app/data                      # ✅ Writable - All persistent data
+      - ./data/logs:/app/logs                 # ✅ Writable - All log files
+      - ./data/docs:/app/docs                 # ✅ Writable - Documentation, reports
       # └─────────────────────────────────────────────────────────────────────
 
       # ┌─ PROJECT WORKSPACE MOUNTS (Writable by agents) ───────────────────
-      # Project-specific workspaces and build artifacts
-      - ./projects:/app/projects      # ✅ Writable - Project workspaces
+      # Project-specific workspaces and build artifacts (in ./data/)
+      - ./data/projects:/app/projects         # ✅ Writable - Project workspaces
+      - ./data/worktrees:/tmp/hephaestus_worktrees  # ✅ Writable - Agent git worktrees
       # └─────────────────────────────────────────────────────────────────────
 
       # ┌─ SOURCE CODE MOUNTS (Writable by agents) ──────────────────────────
@@ -119,13 +124,14 @@ services:
     container_name: hephaestus-monitor
     command: python run_monitor.py
     volumes:
-      # Data persistence mounts (same as server)
-      - ./data:/app/data              # ✅ Writable - Monitoring data
-      - ./logs:/app/logs              # ✅ Writable - Monitoring logs
-      - ./docs:/app/docs              # ✅ Writable - Status reports
+      # Data persistence mounts (same as server, consolidated in ./data/)
+      - ./data:/app/data                      # ✅ Writable - Monitoring data
+      - ./data/logs:/app/logs                 # ✅ Writable - Monitoring logs
+      - ./data/docs:/app/docs                 # ✅ Writable - Status reports
 
-      # Project workspace
-      - ./projects:/app/projects      # ✅ Writable - Project state
+      # Project workspace (in ./data/)
+      - ./data/projects:/app/projects         # ✅ Writable - Project state
+      - ./data/worktrees:/tmp/hephaestus_worktrees  # ✅ Writable - Agent git worktrees
 
       # Source code
       - ./src:/app/src                # ✅ Writable - Code modifications

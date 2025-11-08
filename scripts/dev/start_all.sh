@@ -10,7 +10,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-LOG_DIR="$repo_root/logs"
+LOG_DIR="$repo_root/data/logs"
 mkdir -p "$LOG_DIR"
 
 qdrant_health() {
