@@ -396,7 +396,7 @@ export default function Phases() {
                       <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap font-mono mt-0.5 font-semibold">
                         {new Date(activity.timestamp).toLocaleTimeString()}
                       </span>
-                      <span className="flex-1 text-base text-gray-900 dark:text-gray-100">
+                      <div className="flex-1 text-base text-gray-900 dark:text-gray-100">
                         {activity.type === 'cross_phase_task' && (
                           <>
                             <span className="font-semibold text-gray-900 dark:text-white">Agent {activity.agent_id?.slice(0, 8)}</span>
@@ -427,7 +427,7 @@ export default function Phases() {
                         {activity.description && (
                           <span className="text-gray-600 dark:text-gray-400 ml-1">• {activity.description}</span>
                         )}
-                      </span>
+                      </div>
                     </div>
                   ))}
                 </div>
