@@ -20,23 +20,23 @@ const StatCard: React.FC<{
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-lg shadow-md p-6"
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-lg dark:shadow-gray-900/50 p-6 border border-transparent dark:border-gray-700"
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600">{title}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
           <motion.p
             key={value}
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            className="text-3xl font-bold text-gray-800 mt-2"
+            className="text-3xl font-bold text-gray-800 dark:text-white mt-2"
           >
             {value}
           </motion.p>
           {trend !== undefined && (
             <div className="flex items-center mt-2">
-              <TrendingUp className={`w-4 h-4 ${trend > 0 ? 'text-green-500' : 'text-red-500'}`} />
-              <span className={`text-sm ml-1 ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
+              <TrendingUp className={`w-4 h-4 ${trend > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`} />
+              <span className={`text-sm ml-1 ${trend > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
                 {trend > 0 ? '+' : ''}{trend}
               </span>
             </div>
@@ -55,11 +55,15 @@ const ActivityItem: React.FC<{ activity: any; isNew?: boolean }> = ({ activity, 
     <motion.div
       initial={isNew ? { opacity: 0, x: -20 } : false}
       animate={{ opacity: 1, x: 0 }}
-      className={`flex items-center p-3 ${isNew ? 'bg-blue-50' : ''} hover:bg-gray-50 transition-colors`}
+      className={`flex items-center p-3 transition-colors ${
+        isNew
+          ? 'bg-blue-50 dark:bg-blue-900/20'
+          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+      }`}
     >
       <div className="flex-1">
-        <p className="text-sm text-gray-800">{activity.message}</p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-sm text-gray-800 dark:text-gray-200">{activity.message}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
         </p>
       </div>
@@ -139,15 +143,15 @@ const Dashboard: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary dark:border-blue-400"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <p className="text-red-600">Failed to load dashboard stats</p>
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+        <p className="text-red-600 dark:text-red-400">Failed to load dashboard stats</p>
       </div>
     );
   }
@@ -155,8 +159,8 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Real-time system overview</p>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Real-time system overview</p>
       </div>
 
       {/* Stats Grid */}
@@ -210,15 +214,15 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-lg shadow-md">
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-800">Recent Activity</h2>
-          <div className="flex items-center text-sm text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-lg dark:shadow-gray-900/50 border border-transparent dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Recent Activity</h2>
+          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-1" />
             Live Updates
           </div>
         </div>
-        <div className="divide-y">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {recentActivities.length > 0 ? (
             recentActivities.map((activity, index) => (
               <ActivityItem
@@ -228,7 +232,7 @@ const Dashboard: React.FC = () => {
               />
             ))
           ) : (
-            <div className="p-6 text-center text-gray-500">
+            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
               No recent activity
             </div>
           )}

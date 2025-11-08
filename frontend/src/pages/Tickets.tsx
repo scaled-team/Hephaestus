@@ -62,9 +62,9 @@ const Tickets: React.FC = () => {
   // Show loading state while fetching workflow
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400">Loading workflow...</p>
         </div>
       </div>
@@ -74,9 +74,9 @@ const Tickets: React.FC = () => {
   // Show error if no workflow found
   if (!selectedWorkflowId) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center text-gray-500 dark:text-gray-400">
-          <p className="text-lg font-semibold mb-2">No workflow found</p>
+      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md dark:shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700">
+          <p className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">No workflow found</p>
           <p className="text-sm">Please create a workflow first</p>
         </div>
       </div>
@@ -84,9 +84,9 @@ const Tickets: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Compressed Header with Tabs and Actions */}
-      <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 mb-4">
         <div className="flex items-center justify-between">
           <nav className="flex space-x-8">
             {tabs.map(({ id, label, icon: Icon }) => (
@@ -114,7 +114,7 @@ const Tickets: React.FC = () => {
 
             <button
               onClick={handleNewTicket}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors shadow-sm dark:shadow-md dark:shadow-blue-900/50"
             >
               <Plus className="w-5 h-5 mr-2" />
               New Ticket
@@ -124,7 +124,7 @@ const Tickets: React.FC = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
         {activeTab === 'kanban' && (
           <KanbanBoard
             workflowId={selectedWorkflowId}
