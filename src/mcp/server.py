@@ -1462,6 +1462,19 @@ async def create_task(
                     phase_context=phase_context_str if phase_context_str else None,
                 )
 
+                # DEBUG: Log enriched_task structure
+                if enriched_task is None:
+                    logger.error(f"[TASK_ENRICHMENT] enriched_task is None!")
+                    raise ValueError("Task enrichment returned None")
+                if not isinstance(enriched_task, dict):
+                    logger.error(f"[TASK_ENRICHMENT] enriched_task is not a dict, type: {type(enriched_task)}")
+                    raise ValueError(f"Task enrichment returned wrong type: {type(enriched_task)}")
+                if "enriched_description" not in enriched_task:
+                    logger.error(f"[TASK_ENRICHMENT] enriched_task missing 'enriched_description' key. Keys: {enriched_task.keys()}")
+                    raise ValueError("Task enrichment missing enriched_description")
+
+                logger.info(f"[TASK_ENRICHMENT] enriched_task structure OK, keys: {list(enriched_task.keys())}")
+
                 # 6. Update task with enriched data
                 session = server_state.db_manager.get_session()
                 task = session.query(Task).filter_by(id=task_id).first()

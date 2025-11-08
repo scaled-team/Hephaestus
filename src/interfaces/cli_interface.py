@@ -198,6 +198,7 @@ class OpenCodeAgent(CLIAgentInterface):
 
         # Save prompt to a temp file
         task_id = kwargs.get('task_id', 'default')
+        worktree_path = kwargs.get('worktree_path', '/tmp/hephaestus_worktrees/default')  # ✅ Get worktree path
         prompt_file = f"/tmp/opencode_prompt_{task_id}.txt"
 
         # Write the system prompt to file
@@ -210,9 +211,11 @@ class OpenCodeAgent(CLIAgentInterface):
         # Get configured model (OpenCode uses provider/model format)
         model = getattr(config, 'cli_model', 'anthropic/claude-sonnet-4')
 
-        # OpenCode command with -p flag to load the prompt
-        # The prompt will be added to the input but not submitted
-        command = f"opencode -p \"$(cat {prompt_file})\" --model {model}"
+        # ✅ CRITICAL FIX: Start OpenCode from the worktree directory, not /app
+        # This allows OpenCode to write files to its own working directory
+        # OpenCode will still find opencode.json via parent directory traversal
+        # The worktree directory is where the agent has full write permissions
+        command = f"cd {worktree_path} && opencode -p \"$(cat {prompt_file})\" --model {model}"
 
         return command
 

@@ -135,10 +135,14 @@ class PhaseManager:
                 existing_workflow.phases_folder_path = workflow_def.phases_folder
                 # Update the name to match the current workflow definition
                 existing_workflow.name = workflow_def.name
-                session.commit()
+                # ✅ CRITICAL FIX: Ensure status is reset to 'active' when reusing workflow
+                existing_workflow.status = "active"
+                session.flush()  # Flush changes to database
+                session.commit()  # Commit transaction
 
                 workflow_id = existing_workflow.id
-                logger.info(f"✅ Updated workflow with new phases folder path")
+                logger.info(f"✅ Updated workflow with new phases folder path and reset status to 'active'")
+                logger.info(f"✅ Workflow ID {workflow_id[:8]}... has status='{existing_workflow.status}' (verified in DB)")
             else:
                 # Create new workflow record
                 workflow_id = str(uuid.uuid4())

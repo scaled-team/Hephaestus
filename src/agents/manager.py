@@ -203,6 +203,7 @@ class AgentManager:
             launch_command = cli_agent.get_launch_command(
                 system_prompt=system_prompt,
                 task_id=task.id,
+                worktree_path=worktree_path,  # ✅ Pass worktree path so agent knows where to write
             )
 
             # Send launch command to tmux
@@ -255,8 +256,8 @@ class AgentManager:
             logger.info(f"CLI type: {cli_type}")
             logger.info(f"Tmux session: {session_name}")
 
-            # Get the initial message with worktree path
-            initial_message = self._format_initial_message(task, agent_id, worktree_path, agent_type, enriched_data)
+            # Get the initial message with worktree path and cli_type
+            initial_message = self._format_initial_message(task, agent_id, worktree_path, agent_type, enriched_data, cli_type)
             logger.info(f"Initial message length: {len(initial_message)} characters")
 
             # Save the full prompt to /tmp for debugging
@@ -381,7 +382,7 @@ class AgentManager:
         logger.debug(f"Created tmux session: {session_name}")
         return session
 
-    def _format_initial_message(self, task: Task, agent_id: str, worktree_path: str = None, agent_type: str = "phase", enriched_data: dict = None) -> str:
+    def _format_initial_message(self, task: Task, agent_id: str, worktree_path: str = None, agent_type: str = "phase", enriched_data: dict = None, cli_type: str = "opencode") -> str:
         """Format the initial message to send to the agent.
 
         Args:
@@ -389,6 +390,8 @@ class AgentManager:
             agent_id: Agent's ID
             worktree_path: Path to the agent's worktree
             agent_type: Type of agent (phase, validator, result_validator)
+            enriched_data: Optional enriched task data with specialized prompts
+            cli_type: Type of CLI tool being used (opencode, claude, etc.)
 
         Returns:
             Formatted initial message
@@ -468,10 +471,25 @@ Task ID: {task.id}
         else:
             logger.info(f"Task {task.id} has no phase_id: {getattr(task, 'phase_id', 'NO ATTRIBUTE')}")
 
+        # For OpenCode agents, prepend explicit curl usage instructions to task description
+        task_description = task.enriched_description or task.raw_description
+        if cli_type == "opencode":
+            task_description = f"""⚠️  IMPORTANT: This task requires interacting with the Hephaestus server.
+You MUST use the HTTP REST API curl commands provided below (not file operations).
+
+REQUIRED ACTIONS (use curl commands for all of these):
+- To create tickets: Use the "Create a Ticket" curl command below
+- To create sub-tasks: Use the "Create Sub-Tasks" curl command below
+- To mark task as done: Use the "Mark Your Task as Done" curl command below
+- To save discoveries: Use the "Save Learnings/Discoveries" curl command below
+
+ORIGINAL TASK:
+{task_description}"""
+
         base_message += f"""
 
 TASK DESCRIPTION:
-{task.enriched_description or task.raw_description}
+{task_description}
 
 COMPLETION CRITERIA:
 {task.done_definition}"""
@@ -500,10 +518,75 @@ NOTE: Having a workflow-level goal does NOT mean you skip update_task_status. Yo
 IMPORTANT INSTRUCTIONS:
 1. Complete all the requirements listed in the COMPLETION CRITERIA above
 
-2. You have access to the Hephaestus MCP server tools. Use them to:
-   
+2. """
+
+        # Get workflow_id for API calls
+        workflow_id = task.workflow_id or "UNKNOWN"
+
+        # Add CLI-specific tool instructions
+        if cli_type == "opencode":
+            base_message += f"""You have access to the Hephaestus server via HTTP REST API. Use these curl commands:
+
+   🔑 CRITICAL: Always include these headers in every request:
+   - Content-Type: application/json
+   - X-Agent-ID: {agent_id}
+
+   **Available API Endpoints** (use curl from your terminal):
+
+   📋 **Create a Ticket** (for infrastructure/documentation tasks):
+   ```bash
+   curl -X POST http://hephaestus-server:8000/api/tickets/create \\
+     -H "Content-Type: application/json" \\
+     -H "X-Agent-ID: {agent_id}" \\
+     -d '{{"title":"Your ticket title", "description":"Detailed description", "component":"infrastructure", "workflow_id":"{workflow_id}"}}'
+   ```
+
+   NOTE: Your workflow_id is: {workflow_id}
+
+   ✅ **Mark Your Task as Done** (REQUIRED when you complete your work):
+   ```bash
+   curl -X POST http://hephaestus-server:8000/update_task_status \\
+     -H "Content-Type: application/json" \\
+     -H "X-Agent-ID: {agent_id}" \\
+     -d '{{"task_id":"{task.id}", "status":"done", "completion_notes":"Summary of what you accomplished"}}'
+   ```
+
+   💾 **Save Learnings/Discoveries** (use liberally - see Memory Guidelines below):
+   ```bash
+   curl -X POST http://hephaestus-server:8000/save_memory \\
+     -H "Content-Type: application/json" \\
+     -H "X-Agent-ID: {agent_id}" \\
+     -d '{{"memory_type":"discovery", "content":"What you learned", "tags":["tag1","tag2"], "related_files":["path/to/file.py"]}}'
+   ```
+
+   🔍 **Search Past Memories** (when you need information):
+   ```bash
+   curl -X POST http://hephaestus-server:8000/search_memories \\
+     -H "Content-Type: application/json" \\
+     -H "X-Agent-ID: {agent_id}" \\
+     -d '{{"query":"what you're looking for", "limit":5}}'
+   ```
+
+   📋 **Create Sub-Tasks** (if you need to break down complex work):
+   ```bash
+   curl -X POST http://hephaestus-server:8000/create_task \\
+     -H "Content-Type: application/json" \\
+     -H "X-Agent-ID: {agent_id}" \\
+     -d '{{"task_description":"Sub-task description", "done_definition":"When is it done", "priority":"medium"}}'
+   ```
+
+   💡 **TIPS**:
+   - All curl commands run inside your Docker container, so use http://hephaestus-server:8000 (not localhost)
+   - Always check curl exit codes: $? (0 = success, non-zero = error)
+   - Use `curl -v` for debugging if you get errors
+   - JSON must be properly escaped - use single quotes around the -d argument
+   - The API will return JSON responses with status and data"""
+        else:
+            # Claude Code or other CLI with MCP support
+            base_message += f"""You have access to the Hephaestus MCP server tools. Use them to:
+
    🔑 REMEMBER: When calling these tools, always use agent_id="{agent_id}"
-   
+
    - update_task_status: Mark your task as done when completed (with task_id: {task.id})
    - save_memory: Save discoveries for other agents (USE THIS LIBERALLY - see Memory Guidelines below)
    - create_task: Create sub-tasks if you need to break down complex work
@@ -628,6 +711,18 @@ REMEMBER:
 
         logger.info(f"🔍 PROMPT SIZE DEBUG: FINAL MESSAGE LENGTH: {len(base_message)} characters")
         logger.info(f"🔍 PROMPT SIZE DEBUG: Phase context contributed: {len(phase_context_section)} chars ({len(phase_context_section)/len(base_message)*100:.1f}% of total if only added once)")
+
+        # 🔧 CRITICAL FIX: Replace ALL [workflow_id] placeholders from phase templates
+        # The phase context includes templates with [workflow_id] placeholders that need to be substituted
+        if workflow_id and workflow_id != "UNKNOWN":
+            placeholder_count = base_message.count("[workflow_id]")
+            if placeholder_count > 0:
+                logger.info(f"🔧 Replacing {placeholder_count} [workflow_id] placeholders with actual workflow_id: {workflow_id}")
+                base_message = base_message.replace("[workflow_id]", workflow_id)
+            else:
+                logger.debug(f"No [workflow_id] placeholders found in prompt (workflow_id={workflow_id})")
+        else:
+            logger.warning(f"workflow_id is UNKNOWN or None, skipping placeholder replacement")
 
         return base_message
 

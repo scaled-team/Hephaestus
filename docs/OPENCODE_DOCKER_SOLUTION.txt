@@ -1,0 +1,201 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║          OPENCODE AGENT FILE WRITE SCOPE SOLUTION                         ║
+║                                                                            ║
+║         How to Fix "Write Outside of Project Scope" Errors                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📊 PROBLEM IDENTIFIED
+════════════════════════════════════════════════════════════════════════════════
+
+When agents running in OpenCode Docker containers try to write files,
+they fail with: "Write outside of project scope"
+
+ROOT CAUSE:
+OpenCode Docker containers restrict file writes to mounted volumes only.
+Attempts to write to /root/, /tmp/, /etc/, or any unmounted directory fail.
+
+════════════════════════════════════════════════════════════════════════════════
+
+✅ SOLUTION: Use Mounted Volume Paths
+════════════════════════════════════════════════════════════════════════════════
+
+WRITABLE DIRECTORIES (Inside Docker Container):
+
+  /app/data/      ← For database files, cache, data
+  /app/logs/      ← For log files, metrics, monitoring
+  /app/docs/      ← For documentation, reports, analysis
+  /app/projects/  ← For project workspaces
+  /app/src/       ← For source code
+  /app/scripts/   ← For script files
+
+HOST EQUIVALENTS:
+
+  ./data/         ← Corresponds to /app/data/
+  ./logs/         ← Corresponds to /app/logs/
+  ./docs/         ← Corresponds to /app/docs/
+  ./projects/     ← Corresponds to /app/projects/
+  ./src/          ← Corresponds to /app/src/
+  ./scripts/      ← Corresponds to /app/scripts/
+
+════════════════════════════════════════════════════════════════════════════════
+
+🔒 NON-WRITABLE DIRECTORIES
+════════════════════════════════════════════════════════════════════════════════
+
+These paths are NOT mounted and will cause write errors:
+
+  ❌ /root/               - Home directory (not mounted)
+  ❌ /tmp/                - Temporary directory (not mounted)
+  ❌ /etc/                - System configuration (not mounted)
+  ❌ /var/                - System variables (not mounted)
+  ❌ ~/anything           - Home shortcuts (not mounted)
+  ❌ Any unmounted path   - Not in docker-compose.yml volumes
+
+════════════════════════════════════════════════════════════════════════════════
+
+💻 CODE EXAMPLES
+════════════════════════════════════════════════════════════════════════════════
+
+BEFORE (❌ FAILS):
+───────────────────
+with open("/root/myfile.txt", 'w') as f:
+    f.write("data")
+→ Error: Write outside of project scope
+
+AFTER (✅ WORKS):
+────────────────
+from pathlib import Path
+
+# Create directory if it doesn't exist
+Path("/app/logs").mkdir(parents=True, exist_ok=True)
+
+# Write to writable volume
+with open("/app/logs/myfile.txt", 'w') as f:
+    f.write("data")
+→ Success: File written and visible on host at ./logs/myfile.txt
+
+════════════════════════════════════════════════════════════════════════════════
+
+📋 DOCKER VOLUME CONFIGURATION
+════════════════════════════════════════════════════════════════════════════════
+
+From docker-compose.yml:
+
+  volumes:
+    - ./data:/app/data           # Host ./data → Container /app/data
+    - ./logs:/app/logs           # Host ./logs → Container /app/logs
+    - ./docs:/app/docs           # Host ./docs → Container /app/docs
+    - ./projects:/app/projects   # Host ./projects → Container /app/projects
+    - ./src:/app/src             # Host ./src → Container /app/src
+    - ./scripts:/app/scripts     # Host ./scripts → Container /app/scripts
+
+How it works:
+  - Left side (host): Path on your machine
+  - Right side (container): Path inside Docker
+  - Writes to /app/data/ appear in ./data/ on host
+  - Bidirectional: Either side can see changes
+
+════════════════════════════════════════════════════════════════════════════════
+
+🚀 QUICK START FOR AGENTS
+════════════════════════════════════════════════════════════════════════════════
+
+1. ALWAYS use absolute paths starting with /app/
+
+   ✅ Correct:   /app/data/result.json
+   ❌ Wrong:     data/result.json
+   ❌ Wrong:     ./data/result.json
+   ❌ Wrong:     /root/result.json
+
+2. CREATE directories before writing
+
+   from pathlib import Path
+   Path("/app/logs/agent").mkdir(parents=True, exist_ok=True)
+   
+3. WRITE to proper location
+
+   # For logs
+   with open("/app/logs/agent/run.log", 'w') as f:
+       f.write("log data")
+   
+   # For data/cache
+   with open("/app/data/cache.pkl", 'wb') as f:
+       pickle.dump(data, f)
+   
+   # For documentation
+   with open("/app/docs/analysis/report.md", 'w') as f:
+       f.write("# Report\n...")
+
+4. VERIFY success
+
+   print("✅ Written to: /app/logs/agent/run.log")
+
+════════════════════════════════════════════════════════════════════════════════
+
+🎯 DIRECTORY ORGANIZATION GUIDE
+════════════════════════════════════════════════════════════════════════════════
+
+Recommended structure:
+
+  /app/data/
+  ├── hephaestus.db           Database file
+  ├── cache/                  Cached computations
+  └── memories/               Agent memories
+
+  /app/logs/
+  ├── agent_runs/             Agent execution logs
+  ├── errors/                 Error logs
+  └── performance/            Metrics and performance data
+
+  /app/docs/
+  ├── analysis/               Analysis results
+  ├── workflows/              Workflow definitions
+  └── api/                    API documentation
+
+  /app/projects/
+  ├── project-alpha/          Project workspaces
+  │   ├── src/
+  │   └── output/
+  └── project-beta/
+      ├── src/
+      └── output/
+
+════════════════════════════════════════════════════════════════════════════════
+
+📚 COMPLETE DOCUMENTATION
+════════════════════════════════════════════════════════════════════════════════
+
+For detailed information, see:
+
+  1. OPENCODE_FILE_WRITE_GUIDE.md
+     - Complete guide with examples
+     - Troubleshooting section
+     - Best practices for agents
+
+  2. OPENCODE_QUICK_REFERENCE.md
+     - Quick reference card
+     - Copy-paste code snippets
+     - Common errors and fixes
+
+  3. docker-compose.yml
+     - Volume mount configuration
+     - Container definitions
+     - Network setup
+
+════════════════════════════════════════════════════════════════════════════════
+
+✨ SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+PROBLEM:    Agent writes fail with "Write outside of project scope"
+CAUSE:      Trying to write to unmounted directories
+SOLUTION:   Use /app/ paths that are mounted in docker-compose.yml
+
+QUICK RULE: Write to /app/data/, /app/logs/, /app/docs/, or /app/projects/
+            Never write to /root/, /tmp/, /etc/, or unmounted paths
+
+VERIFICATION: Files appear in corresponding ./data/, ./logs/, ./docs/ on host
+
+════════════════════════════════════════════════════════════════════════════════
+
+Ready to write files in Docker? ✅ Let's go!

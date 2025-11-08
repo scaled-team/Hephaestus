@@ -1021,8 +1021,11 @@ from sqlalchemy.sql import text
 def get_db(database_path: Optional[str] = None):
     """Provide a transactional scope around a series of operations."""
     if database_path is None:
-        # Check environment variable for test database
-        database_path = os.environ.get("HEPHAESTUS_TEST_DB", "hephaestus.db")
+        # Check environment variable for test database first
+        database_path = os.environ.get("HEPHAESTUS_TEST_DB", None)
+        if database_path is None:
+            # ✅ FIX: Use DATABASE_PATH env var if set (production database path)
+            database_path = os.environ.get("DATABASE_PATH", "hephaestus.db")
     db_manager = DatabaseManager(database_path)
     db = db_manager.get_session()
     try:

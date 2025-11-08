@@ -1,3 +1,24 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Hephaestus Docker Compose Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# This Docker Compose configuration sets up the complete Hephaestus MCP server
+# infrastructure including the main server, monitoring loop, Qdrant vector store,
+# and frontend development server.
+#
+# CRITICAL: OpenCode agents running in these containers can ONLY write to:
+# - /app/data/    (host: ./data/)
+# - /app/logs/    (host: ./logs/)
+# - /app/docs/    (host: ./docs/)
+# - /app/projects/ (host: ./projects/)
+# - /app/src/     (host: ./src/)
+# - /app/scripts/ (host: ./scripts/)
+#
+# Any attempt to write outside these paths will fail with "Write outside of project scope" error.
+# See OPENCODE_FILE_WRITE_GUIDE.md and OPENCODE_QUICK_REFERENCE.md for details.
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
 services:
   # Qdrant vector database
   qdrant:
@@ -9,7 +30,21 @@ services:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
 
-  # Hephaestus MCP Server
+  # ───────────────────────────────────────────────────────────────────────────
+  # Hephaestus MCP Server - Main Server for Agent Coordination
+  # ───────────────────────────────────────────────────────────────────────────
+  # Primary server that orchestrates agent execution, manages memory storage,
+  # and coordinates with Qdrant vector database for semantic search.
+  #
+  # File Write Rules for OpenCode Agents:
+  # Only the following paths are writable. Any other path will cause errors:
+  # - /app/data/    → Database files, cached data, agent memories
+  # - /app/logs/    → Log files, execution records, error logs
+  # - /app/docs/    → Documentation, reports, analysis output
+  # - /app/projects/ → Project workspaces, build artifacts
+  # - /app/src/     → Source code modifications, new modules
+  # - /app/scripts/ → Script files, automation tools
+  # ───────────────────────────────────────────────────────────────────────────
   hephaestus-server:
     build: .
     container_name: hephaestus-server
@@ -17,26 +52,44 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Data persistence
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./docs:/app/docs
-      # Project workspace
-      - ./projects:/app/projects
-      # Source code (for development hot-reloading)
-      - ./src:/app/src
-      - ./scripts:/app/scripts
-      # Configuration files
-      - ./hephaestus_config.yaml:/app/hephaestus_config.yaml
-      - ./opencode.json:/app/opencode.json
-      - ./opencode.json:/root/.config/opencode/opencode.json
-      - ./.env:/app/.env
-      # Entry point scripts
-      - ./run_server.py:/app/run_server.py
-      - ./run_monitor.py:/app/run_monitor.py
-      - ./run_prd_workflow.py:/app/run_prd_workflow.py
-      # Docker socket for tmux session management
+      # ┌─ DATA PERSISTENCE MOUNTS (Writable by agents) ─────────────────────
+      # Database, cache, and data files that persist between runs
+      - ./data:/app/data              # ✅ Writable - Database, cache, agent data
+      - ./logs:/app/logs              # ✅ Writable - All log files
+      - ./docs:/app/docs              # ✅ Writable - Documentation, reports
+      # └─────────────────────────────────────────────────────────────────────
+
+      # ┌─ PROJECT WORKSPACE MOUNTS (Writable by agents) ───────────────────
+      # Project-specific workspaces and build artifacts
+      - ./projects:/app/projects      # ✅ Writable - Project workspaces
+      # └─────────────────────────────────────────────────────────────────────
+
+      # ┌─ SOURCE CODE MOUNTS (Writable by agents) ──────────────────────────
+      # Development source code with hot-reloading capability
+      - ./src:/app/src                # ✅ Writable - Application source
+      - ./scripts:/app/scripts        # ✅ Writable - Utility scripts
+      - ./opencode.json:/app/opencode.json  # ✅ OpenCode CLI configuration
+      # └─────────────────────────────────────────────────────────────────────
+
+      # ┌─ CONFIGURATION MOUNTS (Read-only) ─────────────────────────────────
+      # Configuration files - agents should NOT modify these
+      - ./hephaestus_config.yaml:/app/hephaestus_config.yaml  # 🔒 Read-only
+      - ./opencode.json:/app/opencode.json                    # 🔒 Read-only
+      - ./opencode.json:/root/.config/opencode/opencode.json  # 🔒 Read-only
+      - ./.env:/app/.env                                      # 🔒 Read-only
+      # └─────────────────────────────────────────────────────────────────────
+
+      # ┌─ ENTRY POINT SCRIPTS (Read-only) ──────────────────────────────────
+      # Server startup and utility scripts
+      - ./run_server.py:/app/run_server.py                    # 🔒 Read-only
+      - ./run_monitor.py:/app/run_monitor.py                  # 🔒 Read-only
+      - ./run_prd_workflow.py:/app/run_prd_workflow.py        # 🔒 Read-only
+      # └─────────────────────────────────────────────────────────────────────
+
+      # ┌─ SYSTEM MOUNTS ─────────────────────────────────────────────────────
+      # Docker socket for tmux session management (read-write for container mgmt)
       - /var/run/docker.sock:/var/run/docker.sock
+      # └─────────────────────────────────────────────────────────────────────
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -53,31 +106,43 @@ services:
       - qdrant
     restart: unless-stopped
 
-  # Hephaestus Monitoring Loop
+  # ───────────────────────────────────────────────────────────────────────────
+  # Hephaestus Monitoring Loop - Health and Progress Tracking
+  # ───────────────────────────────────────────────────────────────────────────
+  # Continuous monitoring service that tracks server health, agent progress,
+  # and system state. Writes monitoring logs and metrics to /app/logs/.
+  #
+  # Same volume mount restrictions apply - see hephaestus-server above.
+  # ───────────────────────────────────────────────────────────────────────────
   hephaestus-monitor:
     build: .
     container_name: hephaestus-monitor
     command: python run_monitor.py
     volumes:
-      # Data persistence
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./docs:/app/docs
+      # Data persistence mounts (same as server)
+      - ./data:/app/data              # ✅ Writable - Monitoring data
+      - ./logs:/app/logs              # ✅ Writable - Monitoring logs
+      - ./docs:/app/docs              # ✅ Writable - Status reports
+
       # Project workspace
-      - ./projects:/app/projects
-      # Source code (for development hot-reloading)
-      - ./src:/app/src
-      - ./scripts:/app/scripts
-      # Configuration files
-      - ./hephaestus_config.yaml:/app/hephaestus_config.yaml
-      - ./opencode.json:/app/opencode.json
-      - ./opencode.json:/root/.config/opencode/opencode.json
-      - ./.env:/app/.env
-      # Entry point scripts
-      - ./run_server.py:/app/run_server.py
-      - ./run_monitor.py:/app/run_monitor.py
-      - ./run_prd_workflow.py:/app/run_prd_workflow.py
-      # Docker socket for tmux session management
+      - ./projects:/app/projects      # ✅ Writable - Project state
+
+      # Source code
+      - ./src:/app/src                # ✅ Writable - Code modifications
+      - ./scripts:/app/scripts        # ✅ Writable - Monitoring scripts
+
+      # Configuration files (read-only)
+      - ./hephaestus_config.yaml:/app/hephaestus_config.yaml  # 🔒 Read-only
+      - ./opencode.json:/app/opencode.json                    # 🔒 Read-only
+      - ./opencode.json:/root/.config/opencode/opencode.json  # 🔒 Read-only
+      - ./.env:/app/.env                                      # 🔒 Read-only
+
+      # Entry point scripts (read-only)
+      - ./run_server.py:/app/run_server.py                    # 🔒 Read-only
+      - ./run_monitor.py:/app/run_monitor.py                  # 🔒 Read-only
+      - ./run_prd_workflow.py:/app/run_prd_workflow.py        # 🔒 Read-only
+
+      # Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}

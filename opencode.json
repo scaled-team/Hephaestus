@@ -6,6 +6,34 @@
   "permission": {
     "edit": "allow",
     "bash": "allow",
-    "webfetch": "allow"
+    "webfetch": "allow",
+    "read": "allow",
+    "write": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "multiedit": "allow",
+    "task": "allow",
+    "websearch": "allow"
+  },
+  "mcp": {
+    "qdrant": {
+      "type": "local",
+      "command": ["python", "/app/qdrant_mcp_openai.py"],
+      "environment": {
+        "QDRANT_URL": "http://qdrant:6333",
+        "COLLECTION_NAME": "hephaestus_agent_memories",
+        "OPENAI_API_KEY": "{env:OPENAI_API_KEY}",
+        "EMBEDDING_MODEL": "text-embedding-3-large"
+      },
+      "enabled": true
+    },
+    "hephaestus": {
+      "type": "local",
+      "command": ["python", "/app/claude_mcp_client.py"],
+      "environment": {
+        "HEPHAESTUS_URL": "http://localhost:8000"
+      },
+      "enabled": true
+    }
   }
 }

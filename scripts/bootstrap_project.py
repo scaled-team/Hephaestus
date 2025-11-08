@@ -106,26 +106,29 @@ def create_phase1_task(
     prd_filename = "PRD.md"
 
     description = (
-        "Phase 1: Analyze PRD at "
-        f"{prd_filename} for {project_name}. "
-        "Extract functional and non-functional requirements, identify components, "
-        "map dependencies with proper blocking relationships, create infrastructure "
-        "tickets first, save key decisions/warnings to memory, and create Phase 2 "
-        "Plan & Implementation tasks (one per component)."
+        f"Phase 1: Read PRD.md and immediately use curl commands to create tickets in the Hephaestus system.\n\n"
+        f"STEP 1: Read the PRD.md file to understand requirements\n"
+        f"STEP 2: For each infrastructure component needed, immediately use the 'Create a Ticket' curl command\n"
+        f"STEP 3: For each feature/component, immediately use the 'Create a Ticket' curl command\n"
+        f"STEP 4: Use the 'Mark Your Task as Done' curl command when all tickets are created\n\n"
+        f"DO NOT create any markdown files, analysis documents, or plans.\n"
+        f"ONLY use the curl commands provided in your instructions to interact with the Hephaestus server.\n"
+        f"CREATE TICKETS DIRECTLY - no intermediate documentation needed."
     )
 
     done_definition = "\n".join(
         [
-            "- PRD document located and thoroughly analyzed",
-            "- Functional requirements extracted and documented",
-            "- Non-functional requirements identified (performance, security, etc.)",
-            "- Infrastructure needs identified and infra tickets created first (no blockers)",
-            "- Implementation order and dependencies determined",
-            "- System components identified and categorized",
-            "- Dependencies between components mapped with blocking relationships",
-            "- Success criteria defined",
-            "- ONE Phase 2 Plan & Implementation task created for EVERY ticket (1:1)",
-            "- All key requirements/decisions saved to memory for the hive mind",
+            "SUCCESS CRITERIA:",
+            "- Used curl command to create at least 3 infrastructure tickets (database, API, deployment)",
+            "- Used curl command to create tickets for all major features/components from PRD",
+            "- All tickets have proper titles, descriptions, and component labels",
+            "- Used curl command to mark this task as done",
+            "",
+            "HOW TO VERIFY:",
+            "- Check the response from each curl command shows 'id' field (ticket created)",
+            "- Final curl command to mark task done returns success",
+            "",
+            "REMINDER: DO NOT create markdown files. ONLY use curl commands."
         ]
     )
 
