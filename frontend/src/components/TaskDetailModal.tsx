@@ -31,7 +31,7 @@ import {
   Ticket
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 import { apiService } from '@/services/api';
 import { Task, TaskFullDetails, TicketDetail } from '@/types';
