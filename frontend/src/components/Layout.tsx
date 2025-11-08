@@ -137,9 +137,13 @@ const Layout: React.FC = () => {
                   </span>
                 )}
                 {/* Config page link */}
-                <a href="/config" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                <NavLink
+                  to="/config"
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  title="Configuration"
+                >
                   <Settings className="w-5 h-5" />
-                </a>
+                </NavLink>
               </div>
             </div>
           </header>

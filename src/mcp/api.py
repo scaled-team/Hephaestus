@@ -1088,6 +1088,88 @@ class FrontendAPI:
         finally:
             session.close()
 
+    async def get_system_config(self) -> Dict[str, Any]:
+        """Expose sanitized runtime configuration for the UI."""
+        from src.core.simple_config import get_config
+
+        config = get_config()
+
+        def path_to_str(value):
+            try:
+                return str(value) if value is not None else None
+            except Exception:
+                return None
+
+        return {
+            "server": {
+                "host": config.mcp_host,
+                "port": config.mcp_port,
+                "enable_cors": getattr(config, "enable_cors", True),
+            },
+            "paths": {
+                "database": path_to_str(config.database_path),
+                "phases_folder": path_to_str(config.phases_folder),
+                "worktree_base": path_to_str(config.worktree_base_path),
+                "project_root": path_to_str(config.project_root),
+            },
+            "git": {
+                "main_repo_path": path_to_str(config.main_repo_path),
+                "base_branch": getattr(config, "base_branch", "main"),
+                "worktree_branch_prefix": getattr(config, "worktree_branch_prefix", "agent-"),
+                "auto_commit": getattr(config, "auto_commit", True),
+                "conflict_resolution": getattr(config, "conflict_resolution_strategy", "newest_file_wins"),
+            },
+            "llm": {
+                "provider": getattr(config, "llm_provider", None),
+                "model": getattr(config, "llm_model", None),
+                "default_temperature": getattr(config, "default_temperature", None),
+                "default_max_tokens": getattr(config, "default_max_tokens", None),
+                "embedding_model": getattr(config, "embedding_model", None),
+                "default_openrouter_provider": getattr(config, "default_openrouter_provider", None),
+            },
+            "agents": {
+                "default_cli_tool": getattr(config, "default_cli_tool", None),
+                "cli_model": getattr(config, "cli_model", None),
+                "tmux_session_prefix": getattr(config, "tmux_session_prefix", None),
+                "health_check_interval": getattr(config, "agent_health_check_interval", None),
+                "max_health_failures": getattr(config, "max_health_check_failures", None),
+                "termination_delay": getattr(config, "agent_termination_delay", None),
+                "max_concurrent_agents": getattr(config, "max_concurrent_agents", None),
+            },
+            "monitoring": {
+                "enabled": getattr(config, "monitoring_enabled", True),
+                "interval_seconds": getattr(config, "monitoring_interval_seconds", None),
+                "stuck_agent_threshold": getattr(config, "stuck_agent_threshold", None),
+                "guardian_min_agent_age_seconds": getattr(config, "guardian_min_agent_age_seconds", None),
+                "log_level": getattr(config, "log_level", None),
+            },
+            "vector_store": {
+                "qdrant_url": getattr(config, "qdrant_url", None),
+                "collection_prefix": getattr(config, "qdrant_collection_prefix", None),
+                "embedding_dimension": getattr(config, "embedding_dimension", None),
+            },
+            "task_deduplication": {
+                "enabled": getattr(config, "task_dedup_enabled", None),
+                "similarity_threshold": getattr(config, "task_similarity_threshold", None),
+                "related_threshold": getattr(config, "task_related_threshold", None),
+                "batch_size": getattr(config, "task_dedup_batch_size", None),
+                "embedding_model": getattr(config, "task_embedding_model", None),
+            },
+            "diagnostic_agent": {
+                "enabled": getattr(config, "diagnostic_agent_enabled", None),
+                "cooldown_seconds": getattr(config, "diagnostic_cooldown_seconds", None),
+                "min_stuck_time_seconds": getattr(config, "diagnostic_min_stuck_time_seconds", None),
+                "max_agents_to_analyze": getattr(config, "diagnostic_max_agents_to_analyze", None),
+                "max_conductor_analyses": getattr(config, "diagnostic_max_conductor_analyses", None),
+                "max_tasks_per_run": getattr(config, "diagnostic_max_tasks_per_run", None),
+            },
+            "ticket_tracking": {
+                "enabled": getattr(config, "ticket_tracking_enabled", None),
+                "default_human_review": getattr(config, "default_human_review", None),
+                "default_approval_timeout": getattr(config, "default_approval_timeout", None),
+            },
+        }
+
     async def get_results(
         self,
         scope: str = 'all',
@@ -1595,6 +1677,11 @@ def create_frontend_routes(db_manager: DatabaseManager, agent_manager: AgentMana
     async def get_system_overview():
         """Get comprehensive system overview data."""
         return await frontend_api.get_system_overview()
+
+    @router.get("/config")
+    async def get_system_config():
+        """Expose sanitized configuration for the UI."""
+        return await frontend_api.get_system_config()
 
     @router.get("/results")
     async def get_results(

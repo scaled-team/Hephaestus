@@ -33,29 +33,31 @@ const AgentNode: React.FC<{ data: any }> = ({ data }) => {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const baseClasses = isExternal ? 'bg-purple-50 border-purple-400' : 'bg-blue-50 border-blue-400';
-  const highlightClasses = isHighlighted ? 'ring-4 ring-red-400 ring-opacity-75 shadow-2xl scale-105' : '';
+  const baseClasses = isExternal
+    ? 'bg-purple-50 dark:bg-purple-950 border-purple-400 dark:border-purple-600'
+    : 'bg-blue-50 dark:bg-blue-950 border-blue-400 dark:border-blue-600';
+  const highlightClasses = isHighlighted ? 'ring-4 ring-red-400 dark:ring-red-500 ring-opacity-75 shadow-2xl scale-105' : '';
   const dimClasses = isDimmed ? 'opacity-30' : '';
 
   return (
-    <div className={`${baseClasses} ${highlightClasses} ${dimClasses} border-2 rounded-lg p-2 min-w-[140px] shadow-md relative transition-all duration-300`}>
+    <div className={`${baseClasses} ${highlightClasses} ${dimClasses} border-2 rounded-lg p-3 min-w-[150px] shadow-md relative transition-all duration-300`}>
       <Handle
         type="target"
         position={Position.Left}
-        style={{ background: isExternal ? '#9333EA' : '#3B82F6', width: 8, height: 8 }}
+        style={{ background: isExternal ? '#9333EA' : '#3B82F6', width: 10, height: 10 }}
       />
       <Handle
         type="source"
         position={Position.Right}
-        style={{ background: isExternal ? '#9333EA' : '#3B82F6', width: 8, height: 8 }}
+        style={{ background: isExternal ? '#9333EA' : '#3B82F6', width: 10, height: 10 }}
       />
-      <div className="flex items-center gap-1 mb-1">
-        <Bot className={`w-4 h-4 ${isExternal ? 'text-purple-600' : 'text-blue-600'}`} />
-        <span className="text-xs font-semibold text-gray-800">{isExternal ? 'MCP' : 'Agent'}</span>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Bot className={`w-4 h-4 ${isExternal ? 'text-purple-600 dark:text-purple-400' : 'text-blue-600 dark:text-blue-400'}`} />
+        <span className="text-sm font-bold text-gray-900 dark:text-white">{isExternal ? 'MCP' : 'Agent'}</span>
       </div>
-      <p className="text-xs font-mono text-gray-700">{data.id.substring(0, 8)}...</p>
+      <p className="text-sm font-mono text-gray-800 dark:text-gray-200 mb-1">{data.id.substring(0, 8)}...</p>
       {data.created_at && (
-        <p className="text-xs text-gray-500">🕐 {formatTime(data.created_at)}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">🕐 {formatTime(data.created_at)}</p>
       )}
       {!isExternal && <StatusBadge status={data.status} size="sm" />}
     </div>
@@ -74,43 +76,43 @@ const TaskNode: React.FC<{ data: any }> = ({ data }) => {
   };
 
   const phaseColors: Record<number, string> = {
-    1: 'bg-green-50 border-green-400',
-    2: 'bg-blue-50 border-blue-400',
-    3: 'bg-yellow-50 border-yellow-400',
-    4: 'bg-pink-50 border-pink-400',
-    5: 'bg-indigo-50 border-indigo-400',
+    1: 'bg-green-50 dark:bg-green-950 border-green-400 dark:border-green-600',
+    2: 'bg-blue-50 dark:bg-blue-950 border-blue-400 dark:border-blue-600',
+    3: 'bg-yellow-50 dark:bg-yellow-950 border-yellow-400 dark:border-yellow-600',
+    4: 'bg-pink-50 dark:bg-pink-950 border-pink-400 dark:border-pink-600',
+    5: 'bg-indigo-50 dark:bg-indigo-950 border-indigo-400 dark:border-indigo-600',
   };
 
-  const bgClass = phaseColors[data.phase_order] || 'bg-gray-50 border-gray-400';
-  const highlightClasses = isHighlighted ? 'ring-4 ring-red-400 ring-opacity-75 shadow-2xl scale-105' : '';
+  const bgClass = phaseColors[data.phase_order] || 'bg-gray-50 dark:bg-gray-800 border-gray-400 dark:border-gray-600';
+  const highlightClasses = isHighlighted ? 'ring-4 ring-red-400 dark:ring-red-500 ring-opacity-75 shadow-2xl scale-105' : '';
   const dimClasses = isDimmed ? 'opacity-30' : '';
 
   return (
-    <div className={`${bgClass} ${highlightClasses} ${dimClasses} border-2 rounded-lg p-2 min-w-[160px] max-w-[200px] shadow-md relative transition-all duration-300`}>
+    <div className={`${bgClass} ${highlightClasses} ${dimClasses} border-2 rounded-lg p-3 min-w-[170px] max-w-[210px] shadow-md relative transition-all duration-300`}>
       <Handle
         type="target"
         position={Position.Left}
-        style={{ background: '#10B981', width: 8, height: 8 }}
+        style={{ background: '#10B981', width: 10, height: 10 }}
       />
       <Handle
         type="source"
         position={Position.Right}
-        style={{ background: '#10B981', width: 8, height: 8 }}
+        style={{ background: '#10B981', width: 10, height: 10 }}
       />
-      <div className="flex items-center gap-1 mb-1">
-        <FileText className="w-4 h-4 text-gray-600" />
-        <span className="text-xs font-semibold text-gray-800">Task</span>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <FileText className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+        <span className="text-sm font-bold text-gray-900 dark:text-white">Task</span>
         {data.phase_name && (
-          <span className="text-xs px-1.5 py-0.5 bg-white bg-opacity-70 text-gray-700 rounded ml-auto font-bold">
+          <span className="text-xs px-2 py-0.5 bg-white dark:bg-gray-900 bg-opacity-80 dark:bg-opacity-80 text-gray-800 dark:text-gray-200 rounded ml-auto font-bold border border-gray-300 dark:border-gray-600">
             P{data.phase_order}
           </span>
         )}
       </div>
-      <p className="text-xs text-gray-700 line-clamp-2">
+      <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2 mb-1 leading-snug">
         {data.description?.substring(0, 50)}...
       </p>
       {data.created_at && (
-        <p className="text-xs text-gray-500">🕐 {formatTime(data.created_at)}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">🕐 {formatTime(data.created_at)}</p>
       )}
       <StatusBadge status={data.status} size="sm" />
     </div>
@@ -132,54 +134,54 @@ const NodePreview: React.FC<{ node: any; onClose: () => void }> = ({ node, onClo
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center p-4 z-50"
         onClick={onClose}
       >
         <motion.div
           initial={{ scale: 0.9 }}
           animate={{ scale: 1 }}
-          className="bg-white rounded-lg shadow-xl max-w-lg w-full"
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full border border-gray-200 dark:border-gray-700"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-6 py-4 border-b flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div className="flex items-center">
               {node.type === 'agent' ? (
-                <Bot className="w-5 h-5 mr-2 text-blue-600" />
+                <Bot className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
               ) : (
-                <FileText className="w-5 h-5 mr-2 text-green-600" />
+                <FileText className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
               )}
-              <h3 className="text-lg font-semibold text-gray-800">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 {node.type === 'agent' ? 'Agent' : 'Task'} Details
               </h3>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-6 space-y-3">
+          <div className="p-6 space-y-4">
             <div>
-              <p className="text-sm text-gray-600">ID</p>
-              <p className="font-mono text-xs text-gray-800">{node.data.id}</p>
+              <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">ID</p>
+              <p className="font-mono text-sm text-gray-900 dark:text-gray-100">{node.data.id}</p>
             </div>
 
             {node.type === 'agent' ? (
               <>
                 <div>
-                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Status</p>
                   <StatusBadge status={node.data.status} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">CLI Type</p>
-                  <p className="text-gray-800">{node.data.cli_type}</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">CLI Type</p>
+                  <p className="text-base text-gray-900 dark:text-gray-100">{node.data.cli_type}</p>
                 </div>
                 {node.data.current_task_id && (
                   <div>
-                    <p className="text-sm text-gray-600">Current Task</p>
-                    <p className="font-mono text-xs text-gray-800">
+                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Current Task</p>
+                    <p className="font-mono text-sm text-gray-900 dark:text-gray-100">
                       {node.data.current_task_id}
                     </p>
                   </div>
@@ -188,30 +190,30 @@ const NodePreview: React.FC<{ node: any; onClose: () => void }> = ({ node, onClo
             ) : (
               <>
                 <div>
-                  <p className="text-sm text-gray-600">Description</p>
-                  <p className="text-gray-800">{node.data.description}</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Description</p>
+                  <p className="text-base text-gray-900 dark:text-gray-100 leading-relaxed">{node.data.description}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Status</p>
                   <StatusBadge status={node.data.status} />
                 </div>
                 {node.data.phase_name && (
                   <div>
-                    <p className="text-sm text-gray-600">Phase</p>
-                    <p className="text-gray-800">
+                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Phase</p>
+                    <p className="text-base text-gray-900 dark:text-gray-100">
                       Phase {node.data.phase_order}: {node.data.phase_name}
                     </p>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-gray-600">Priority</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Priority</p>
                   <span
-                    className={`text-xs px-2 py-1 rounded ${
+                    className={`text-sm px-3 py-1 rounded font-semibold ${
                       node.data.priority === 'high'
-                        ? 'bg-red-100 text-red-700'
+                        ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
                         : node.data.priority === 'medium'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
+                        ? 'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
                     }`}
                   >
                     {node.data.priority}
@@ -603,20 +605,22 @@ const Graph: React.FC = () => {
             <div
               className={`w-full h-full flex items-center justify-center border-b-2 ${
                 header.type === 'agents'
-                  ? (header.label.includes('External') ? 'bg-purple-100 border-purple-400' : 'bg-gray-100 border-gray-400')
-                  : header.label.includes('Phase 1') ? 'bg-green-100 border-green-400' :
-                    header.label.includes('Phase 2') ? 'bg-blue-100 border-blue-400' :
-                    header.label.includes('Phase 3') ? 'bg-yellow-100 border-yellow-400' :
-                    header.label.includes('Phase 4') ? 'bg-pink-100 border-pink-400' :
-                    'bg-indigo-100 border-indigo-400'
+                  ? (header.label.includes('External')
+                      ? 'bg-purple-100 dark:bg-purple-950 border-purple-400 dark:border-purple-600'
+                      : 'bg-gray-100 dark:bg-gray-800 border-gray-400 dark:border-gray-600')
+                  : header.label.includes('Phase 1') ? 'bg-green-100 dark:bg-green-950 border-green-400 dark:border-green-600' :
+                    header.label.includes('Phase 2') ? 'bg-blue-100 dark:bg-blue-950 border-blue-400 dark:border-blue-600' :
+                    header.label.includes('Phase 3') ? 'bg-yellow-100 dark:bg-yellow-950 border-yellow-400 dark:border-yellow-600' :
+                    header.label.includes('Phase 4') ? 'bg-pink-100 dark:bg-pink-950 border-pink-400 dark:border-pink-600' :
+                    'bg-indigo-100 dark:bg-indigo-950 border-indigo-400 dark:border-indigo-600'
               }`}
             >
               <div className="text-center px-2">
-                <p className="text-xs font-bold text-gray-700">
+                <p className="text-sm font-bold text-gray-900 dark:text-white">
                   {header.label.split(':')[0]}
                 </p>
                 {header.label.includes(':') && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                     {header.label.split(':')[1]}
                   </p>
                 )}
@@ -630,21 +634,25 @@ const Graph: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-4">
+      {/* Compact Header */}
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4 mb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Graph Visualization</h1>
-            <p className="text-gray-600 mt-1">Agent and task flow through phases</p>
+          <div className="flex items-center gap-3">
+            <GitBranch className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Graph Visualization</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Agent and task flow through phases</p>
+            </div>
           </div>
 
           {/* Refresh Controls */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">Auto-refresh:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Auto-refresh:</span>
               <select
                 value={refreshInterval}
                 onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                className="px-2 py-1 border border-gray-300 rounded text-sm"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 disabled={!autoRefresh}
               >
                 <option value={5}>5s</option>
@@ -658,8 +666,8 @@ const Graph: React.FC = () => {
                 onClick={() => setAutoRefresh(!autoRefresh)}
                 className={`p-2 rounded-lg transition-colors flex items-center ${
                   autoRefresh
-                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900 border border-green-200 dark:border-green-800'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
                 }`}
                 title={autoRefresh ? 'Pause auto-refresh' : 'Resume auto-refresh'}
               >
@@ -669,7 +677,7 @@ const Graph: React.FC = () => {
 
             <button
               onClick={() => refetch()}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center"
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center font-medium shadow-sm"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
@@ -679,51 +687,51 @@ const Graph: React.FC = () => {
       </div>
 
       {/* Legend */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 mb-4">
         <div className="flex items-center space-x-6 flex-wrap gap-2">
           <div className="flex items-center">
-            <ArrowRight className="w-4 h-4 mr-2 text-indigo-600" />
-            <span className="text-sm font-semibold text-gray-700">Flow: Agents → Tasks → Agents</span>
+            <ArrowRight className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-sm font-bold text-gray-900 dark:text-white">Flow: Agents → Tasks → Agents</span>
           </div>
-          <div className="w-px h-4 bg-gray-300"></div>
+          <div className="w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
           <div className="flex items-center">
-            <div className="w-4 h-4 bg-purple-500 rounded mr-2"></div>
-            <span className="text-sm text-gray-600">External/MCP Agent</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-            <span className="text-sm text-gray-600">Internal Agent</span>
+            <div className="w-5 h-5 bg-purple-500 dark:bg-purple-600 rounded mr-2 border border-purple-600 dark:border-purple-500"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">External/MCP Agent</span>
           </div>
           <div className="flex items-center">
-            <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-            <span className="text-sm text-gray-600">Phase 1 Task</span>
+            <div className="w-5 h-5 bg-blue-500 dark:bg-blue-600 rounded mr-2 border border-blue-600 dark:border-blue-500"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Internal Agent</span>
           </div>
           <div className="flex items-center">
-            <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-            <span className="text-sm text-gray-600">Phase 2 Task</span>
+            <div className="w-5 h-5 bg-green-500 dark:bg-green-600 rounded mr-2 border border-green-600 dark:border-green-500"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Phase 1 Task</span>
           </div>
           <div className="flex items-center">
-            <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
-            <span className="text-sm text-gray-600">Phase 3 Task</span>
-          </div>
-          <div className="w-px h-4 bg-gray-300"></div>
-          <div className="flex items-center">
-            <div className="w-8 h-1 bg-purple-500 mr-2"></div>
-            <span className="text-sm text-gray-600">Creates</span>
+            <div className="w-5 h-5 bg-blue-500 dark:bg-blue-600 rounded mr-2 border border-blue-600 dark:border-blue-500"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Phase 2 Task</span>
           </div>
           <div className="flex items-center">
-            <div className="w-8 h-1 bg-green-500 mr-2"></div>
-            <span className="text-sm text-gray-600">Assigned</span>
+            <div className="w-5 h-5 bg-yellow-500 dark:bg-yellow-600 rounded mr-2 border border-yellow-600 dark:border-yellow-500"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Phase 3 Task</span>
           </div>
-          <div className="w-px h-4 bg-gray-300"></div>
+          <div className="w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
           <div className="flex items-center">
-            <div className="w-8 h-1 bg-red-500 mr-2"></div>
-            <span className="text-sm text-gray-600">Hover to highlight chain</span>
+            <div className="w-10 h-1.5 bg-purple-500 dark:bg-purple-600 mr-2 rounded"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Creates</span>
           </div>
-          <div className="w-px h-4 bg-gray-300"></div>
           <div className="flex items-center">
-            <GitBranch className="w-4 h-4 mr-2 text-gray-500" />
-            <span className="text-sm text-gray-600 font-medium">
+            <div className="w-10 h-1.5 bg-green-500 dark:bg-green-600 mr-2 rounded"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Assigned</span>
+          </div>
+          <div className="w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
+          <div className="flex items-center">
+            <div className="w-10 h-1.5 bg-red-500 dark:bg-red-600 mr-2 rounded"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Hover to highlight chain</span>
+          </div>
+          <div className="w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
+          <div className="flex items-center">
+            <Layers className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm font-bold text-gray-900 dark:text-white">
               {nodes.length} nodes, {edges.length} edges
             </span>
           </div>
@@ -731,7 +739,7 @@ const Graph: React.FC = () => {
       </div>
 
       {/* Graph with Column Headers */}
-      <div className="bg-white rounded-lg shadow-md relative" style={{ height: '800px', width: '100%' }}>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md relative" style={{ height: '800px', width: '100%' }}>
         <ColumnHeaders />
 
         <ReactFlow
@@ -748,8 +756,8 @@ const Graph: React.FC = () => {
           fitViewOptions={{ padding: 0.1, maxZoom: 0.8 }}
           style={{ width: '100%', height: '100%', paddingTop: '60px' }}
         >
-          <Background variant="dots" gap={20} size={1} />
-          <Controls />
+          <Background variant="dots" gap={20} size={1} className="dark:opacity-30" />
+          <Controls className="dark:bg-gray-700 dark:border-gray-600" />
           <MiniMap
             nodeColor={(node) => {
               if (node.type === 'agent') {
@@ -766,6 +774,7 @@ const Graph: React.FC = () => {
             nodeStrokeWidth={3}
             pannable
             zoomable
+            className="dark:bg-gray-700 dark:border-gray-600"
           />
         </ReactFlow>
       </div>

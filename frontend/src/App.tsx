@@ -15,6 +15,7 @@ import Graph from '@/pages/Graph';
 import Observability from '@/pages/Observability';
 import Results from '@/pages/Results';
 import Tickets from '@/pages/Tickets';
+import Config from '@/pages/Config';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +44,7 @@ function App() {
               <Route path="observability" element={<Observability />} />
               <Route path="results" element={<Results />} />
               <Route path="tickets" element={<Tickets />} />
+              <Route path="config" element={<Config />} />
             </Route>
             </Routes>
           </BrowserRouter>

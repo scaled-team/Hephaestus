@@ -99,9 +99,9 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
   return (
     <>
       {/* Layout Management Bar */}
-      <div className="flex items-center space-x-2 bg-white px-4 py-2 border-b">
-        <Layout className="w-4 h-4 text-gray-600" />
-        <span className="text-sm font-medium text-gray-700">Layouts:</span>
+      <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+        <Layout className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Layouts:</span>
 
         {/* Quick Layout Buttons */}
         <div className="flex items-center space-x-1">
@@ -111,8 +111,8 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
               onClick={() => onLoadLayout(layout)}
               className={`px-3 py-1 text-xs rounded transition-colors ${
                 layout.isDefault
-                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
               }`}
               title={`Load ${layout.name}${layout.isDefault ? ' (Default)' : ''}`}
             >
@@ -126,7 +126,7 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
         <div className="flex items-center space-x-2 ml-auto">
           <button
             onClick={() => setShowSaveDialog(true)}
-            className="px-3 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors flex items-center"
+            className="px-3 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded transition-colors flex items-center"
           >
             <Save className="w-3 h-3 mr-1" />
             Save Layout
@@ -134,7 +134,7 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
 
           <button
             onClick={() => setShowLoadDialog(true)}
-            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition-colors flex items-center"
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={savedLayouts.length === 0}
           >
             <FolderOpen className="w-3 h-3 mr-1" />

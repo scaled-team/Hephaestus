@@ -17,6 +17,7 @@ import {
   CommitDiff,
   TicketSearchResult,
   BlockedTask,
+  SystemConfig,
 } from '@/types';
 
 interface ResultQueryParams {
@@ -127,6 +128,11 @@ export const apiService = {
   // System Overview
   getSystemOverview: async (): Promise<any> => {
     const { data } = await api.get('/system-overview');
+    return data;
+  },
+
+  getSystemConfig: async (): Promise<SystemConfig> => {
+    const { data } = await api.get('/config');
     return data;
   },
 

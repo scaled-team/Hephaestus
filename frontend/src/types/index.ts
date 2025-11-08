@@ -435,3 +435,77 @@ export interface BlockedTask {
   phase_id?: string | null;
   workflow_id?: string | null;
 }
+
+export interface SystemConfigSection {
+  [key: string]: string | number | boolean | null;
+}
+
+export interface SystemConfig {
+  server: {
+    host: string;
+    port: number;
+    enable_cors: boolean;
+  };
+  paths: {
+    database: string;
+    phases_folder: string;
+    worktree_base: string;
+    project_root: string;
+  };
+  git: {
+    main_repo_path: string;
+    base_branch: string;
+    worktree_branch_prefix: string;
+    auto_commit: boolean;
+    conflict_resolution: string;
+  };
+  llm: {
+    provider: string;
+    model: string;
+    default_temperature: number;
+    default_max_tokens: number;
+    embedding_model: string;
+    default_openrouter_provider: string;
+  };
+  agents: {
+    default_cli_tool: string;
+    cli_model: string;
+    tmux_session_prefix: string;
+    health_check_interval: number;
+    max_health_failures: number;
+    termination_delay: number;
+    max_concurrent_agents: number;
+  };
+  monitoring: {
+    enabled: boolean;
+    interval_seconds: number;
+    stuck_agent_threshold: number;
+    guardian_min_agent_age_seconds: number;
+    log_level: string;
+  };
+  vector_store: {
+    qdrant_url: string;
+    collection_prefix: string;
+    embedding_dimension: number;
+  };
+  task_deduplication: {
+    enabled: boolean;
+    similarity_threshold: number;
+    related_threshold: number;
+    batch_size: number;
+    embedding_model: string;
+  };
+  diagnostic_agent: {
+    enabled: boolean;
+    cooldown_seconds: number;
+    min_stuck_time_seconds: number;
+    max_agents_to_analyze: number;
+    max_conductor_analyses: number;
+    max_tasks_per_run: number;
+  };
+  ticket_tracking: {
+    enabled: boolean;
+    default_human_review: boolean;
+    default_approval_timeout: number;
+  };
+}

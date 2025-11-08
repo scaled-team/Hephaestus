@@ -55,13 +55,30 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     // Get saved preference from localStorage
     const saved = localStorage.getItem(THEME_KEY) as Theme | null;
-    const preferredTheme = saved || 'system';
-    console.log('[ThemeProvider] Initial theme:', preferredTheme);
+
+    // If no saved preference, use system preference if dark, otherwise default to 'system'
+    let preferredTheme: Theme = 'system';
+    if (saved) {
+      preferredTheme = saved;
+    } else if (getSystemPreference()) {
+      // If system preference is dark and no saved preference, set to dark
+      preferredTheme = 'dark';
+      localStorage.setItem(THEME_KEY, 'dark');
+    }
+
+    console.log('[ThemeProvider] Initial theme:', preferredTheme, '(from localStorage or system preference)');
     return preferredTheme;
   });
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const isDark = getEffectiveTheme(theme) === 'dark';
+    const saved = localStorage.getItem(THEME_KEY) as Theme | null;
+    let preferredTheme: Theme = 'system';
+    if (saved) {
+      preferredTheme = saved;
+    } else if (getSystemPreference()) {
+      preferredTheme = 'dark';
+    }
+    const isDark = getEffectiveTheme(preferredTheme) === 'dark';
     console.log('[ThemeProvider] Initial isDarkMode:', isDark);
     return isDark;
   });

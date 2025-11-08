@@ -286,16 +286,16 @@ const Observability: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary dark:border-blue-400"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <p className="text-red-600">Failed to load agents</p>
+      <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-6 m-4">
+        <p className="text-red-600 dark:text-red-400">Failed to load agents</p>
       </div>
     );
   }
@@ -303,12 +303,12 @@ const Observability: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Monitor className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Agent Observability</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agent Observability</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Monitoring {visibleAgents.size} of {agents.length} agents •
                 {' '}{activeAgents.length} active
@@ -318,16 +318,16 @@ const Observability: React.FC = () => {
 
           <div className="flex items-center space-x-3">
             {/* Connection status */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-700/50">
               {stats.connected > 0 ? (
                 <>
-                  <Wifi className="w-4 h-4 text-green-500" />
-                  <span className="text-sm text-green-600 dark:text-green-400">Live</span>
+                  <Wifi className="w-4 h-4 text-green-500 dark:text-green-400" />
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400">Live</span>
                 </>
               ) : (
                 <>
-                  <WifiOff className="w-4 h-4 text-red-500" />
-                  <span className="text-sm text-red-600 dark:text-red-400">Disconnected</span>
+                  <WifiOff className="w-4 h-4 text-red-500 dark:text-red-400" />
+                  <span className="text-sm font-medium text-red-600 dark:text-red-400">Disconnected</span>
                 </>
               )}
             </div>
@@ -335,7 +335,7 @@ const Observability: React.FC = () => {
             {/* Export button */}
             <button
               onClick={exportLogs}
-              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center"
+              className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors flex items-center font-medium border border-blue-200 dark:border-blue-700/50"
             >
               <Download className="w-4 h-4 mr-1" />
               Export Logs
@@ -378,7 +378,7 @@ const Observability: React.FC = () => {
               initial={{ width: 0 }}
               animate={{ width: 280 }}
               exit={{ width: 0 }}
-              className="bg-white border-r shadow-sm overflow-hidden"
+              className="bg-white dark:bg-gray-800 border-r dark:border-gray-700 shadow-sm overflow-hidden"
             >
               <ObservabilitySidebar
                 agents={filteredAgents}
@@ -395,13 +395,13 @@ const Observability: React.FC = () => {
         </AnimatePresence>
 
         {/* Grid Area */}
-        <div className="flex-1 bg-gray-50 overflow-hidden">
+        <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-hidden">
           {visibleAgents.size === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-900">
               <div className="text-center">
-                <Monitor className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No agents selected</p>
-                <p className="text-sm mt-1">
+                <Monitor className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
+                <p className="text-lg font-medium text-gray-700 dark:text-gray-300">No agents selected</p>
+                <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">
                   {sidebarOpen
                     ? "Select agents from the sidebar to monitor their output"
                     : "Open the sidebar to select agents"}

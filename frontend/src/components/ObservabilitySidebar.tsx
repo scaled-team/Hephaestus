@@ -59,31 +59,31 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
     switch (status) {
       case 'working':
         return {
-          color: 'text-green-600 bg-green-50',
+          color: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30',
           icon: <Activity className="w-3 h-3" />,
           label: 'Working',
         };
       case 'idle':
         return {
-          color: 'text-gray-600 bg-gray-50',
+          color: 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50',
           icon: <Clock className="w-3 h-3" />,
           label: 'Idle',
         };
       case 'stuck':
         return {
-          color: 'text-red-600 bg-red-50',
+          color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30',
           icon: <AlertCircle className="w-3 h-3" />,
           label: 'Stuck',
         };
       case 'terminated':
         return {
-          color: 'text-gray-500 bg-gray-100',
+          color: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800',
           icon: <Bot className="w-3 h-3" />,
           label: 'Terminated',
         };
       default:
         return {
-          color: 'text-gray-600 bg-gray-50',
+          color: 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50',
           icon: <Bot className="w-3 h-3" />,
           label: status,
         };
@@ -129,13 +129,13 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
               }}
             >
               {isVisible ? (
-                <CheckSquare className="w-4 h-4 text-blue-600" />
+                <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               ) : (
-                <Square className="w-4 h-4 text-gray-400" />
+                <Square className="w-4 h-4 text-gray-400 dark:text-gray-600" />
               )}
             </button>
 
-            <Bot className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+            <Bot className="w-4 h-4 text-gray-500 dark:text-gray-500 flex-shrink-0" />
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2">
@@ -163,8 +163,8 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
               )}
 
               {agent.last_activity && (
-                <div className="flex items-center mt-0.5 text-xs text-gray-400">
-                  <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
+                <div className="flex items-center mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                  <Clock className="w-3 h-3 mr-1 flex-shrink-0 text-gray-400 dark:text-gray-600" />
                   <span>{formatDistanceToNow(new Date(agent.last_activity), { addSuffix: true })}</span>
                 </div>
               )}
@@ -173,9 +173,9 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
 
           <div className="flex-shrink-0 ml-2">
             {isVisible ? (
-              <Eye className="w-4 h-4 text-blue-600" />
+              <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             ) : (
-              <EyeOff className="w-4 h-4 text-gray-400" />
+              <EyeOff className="w-4 h-4 text-gray-400 dark:text-gray-600" />
             )}
           </div>
         </div>
