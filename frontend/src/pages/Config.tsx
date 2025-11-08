@@ -86,11 +86,11 @@ const Config: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-md dark:shadow-gray-900/30 border border-gray-200 dark:border-gray-700 p-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Infrastructure</p>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">System Configuration</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium uppercase tracking-wide">Infrastructure</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mt-2">System Configuration</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Live snapshot from hephaestus_config.yaml with environment overrides applied.
           </p>
         </div>
@@ -101,40 +101,42 @@ const Config: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ConfigCard
-          title="Server & Paths"
-          icon={<Server className="w-5 h-5" />}
-          description="Core MCP endpoint and storage locations."
-        >
-          <KeyValueGrid
-            items={[
-              { label: 'Host', value: data.server.host },
-              { label: 'Port', value: data.server.port },
-              { label: 'CORS Enabled', value: data.server.enable_cors ? 'Yes' : 'No' },
-              { label: 'Database', value: data.paths.database },
-              { label: 'Phases Folder', value: data.paths.phases_folder },
-              { label: 'Worktree Base', value: data.paths.worktree_base },
-              { label: 'Project Root', value: data.paths.project_root },
-            ]}
-          />
-        </ConfigCard>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Config Cards */}
+          <ConfigCard
+            title="Server & Paths"
+            icon={<Server className="w-5 h-5" />}
+            description="Core MCP endpoint and storage locations."
+          >
+            <KeyValueGrid
+              items={[
+                { label: 'Host', value: data.server.host },
+                { label: 'Port', value: data.server.port },
+                { label: 'CORS Enabled', value: data.server.enable_cors ? 'Yes' : 'No' },
+                { label: 'Database', value: data.paths.database },
+                { label: 'Phases Folder', value: data.paths.phases_folder },
+                { label: 'Worktree Base', value: data.paths.worktree_base },
+                { label: 'Project Root', value: data.paths.project_root },
+              ]}
+            />
+          </ConfigCard>
 
-        <ConfigCard
-          title="Git & Worktrees"
-          icon={<GitBranch className="w-5 h-5" />}
-          description="Repo synchronization strategy for spawned agents."
-        >
-          <KeyValueGrid
-            items={[
-              { label: 'Main Repository', value: data.git.main_repo_path },
-              { label: 'Base Branch', value: data.git.base_branch },
-              { label: 'Worktree Prefix', value: data.git.worktree_branch_prefix },
-              { label: 'Auto Commit', value: data.git.auto_commit ? 'Enabled' : 'Disabled' },
-              { label: 'Conflict Strategy', value: data.git.conflict_resolution },
-            ]}
-          />
-        </ConfigCard>
+          <ConfigCard
+            title="Git & Worktrees"
+            icon={<GitBranch className="w-5 h-5" />}
+            description="Repo synchronization strategy for spawned agents."
+          >
+            <KeyValueGrid
+              items={[
+                { label: 'Main Repository', value: data.git.main_repo_path },
+                { label: 'Base Branch', value: data.git.base_branch },
+                { label: 'Worktree Prefix', value: data.git.worktree_branch_prefix },
+                { label: 'Auto Commit', value: data.git.auto_commit ? 'Enabled' : 'Disabled' },
+                { label: 'Conflict Strategy', value: data.git.conflict_resolution },
+              ]}
+            />
+          </ConfigCard>
 
         <ConfigCard
           title="LLM Defaults"
@@ -234,6 +236,7 @@ const Config: React.FC = () => {
             {renderStatusChip('Diagnostic Agent', data.diagnostic_agent.enabled)}
           </div>
         </ConfigCard>
+        </div>
       </div>
     </div>
   );
