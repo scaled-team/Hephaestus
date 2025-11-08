@@ -301,15 +301,15 @@ const Observability: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Page Header */}
-      <div className="bg-white shadow-sm border-b px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Monitor className="w-6 h-6 text-blue-600" />
+            <Monitor className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Agent Observability</h1>
-              <p className="text-sm text-gray-600">
+              <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Agent Observability</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Monitoring {visibleAgents.size} of {agents.length} agents •
                 {' '}{activeAgents.length} active
               </p>
@@ -322,12 +322,12 @@ const Observability: React.FC = () => {
               {stats.connected > 0 ? (
                 <>
                   <Wifi className="w-4 h-4 text-green-500" />
-                  <span className="text-sm text-green-600">Live</span>
+                  <span className="text-sm text-green-600 dark:text-green-400">Live</span>
                 </>
               ) : (
                 <>
                   <WifiOff className="w-4 h-4 text-red-500" />
-                  <span className="text-sm text-red-600">Disconnected</span>
+                  <span className="text-sm text-red-600 dark:text-red-400">Disconnected</span>
                 </>
               )}
             </div>
@@ -335,7 +335,7 @@ const Observability: React.FC = () => {
             {/* Export button */}
             <button
               onClick={exportLogs}
-              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors flex items-center"
+              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center"
             >
               <Download className="w-4 h-4 mr-1" />
               Export Logs

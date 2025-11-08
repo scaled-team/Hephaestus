@@ -52,17 +52,17 @@ const AgentCard: React.FC<{
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.02 }}
-      className={`bg-white rounded-lg shadow-md p-6 transition-all ${
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-lg dark:border dark:border-gray-700 p-6 transition-all ${
         isActive ? 'ring-2 ring-primary animate-pulse-slow' : ''
       }`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center">
-          <Bot className="w-6 h-6 text-gray-600 mr-2" />
+          <Bot className="w-6 h-6 text-gray-600 dark:text-gray-400 mr-2" />
           <div>
-            <p className="font-semibold text-gray-800">Agent {agent.id.substring(0, 8)}</p>
-            <p className="text-xs text-gray-500">{agent.cli_type}</p>
+            <p className="font-semibold text-gray-800 dark:text-white">Agent {agent.id.substring(0, 8)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{agent.cli_type}</p>
           </div>
         </div>
         <StatusBadge status={agent.status} size="sm" />
@@ -70,22 +70,22 @@ const AgentCard: React.FC<{
 
       {/* Current Task Section */}
       {agent.current_task ? (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
           <div className="flex items-start justify-between mb-2">
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-1">
-                <FileText className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">Working on Task</span>
+                <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-800 dark:text-blue-300">Working on Task</span>
                 {agent.current_task.phase_info && (
-                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                  <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded">
                     Phase {agent.current_task.phase_info.order}
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-700 line-clamp-2 mb-2">
+              <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 mb-2">
                 {agent.current_task.description}
               </p>
-              <div className="flex items-center space-x-4 text-xs text-gray-600">
+              <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400">
                 <div className="flex items-center">
                   <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
                     agent.current_task.status === 'in_progress' ? 'bg-yellow-400' :
@@ -205,8 +205,8 @@ const AgentCard: React.FC<{
       {/* Agent Health and Stats */}
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-gray-600 mb-1">Health</p>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Health</p>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${healthPercentage}%` }}
@@ -222,7 +222,7 @@ const AgentCard: React.FC<{
         </div>
 
         {agent.last_activity && (
-          <div className="flex items-center text-xs text-gray-500">
+          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
             <Activity className="w-3 h-3 mr-1" />
             {agent.status === 'working' ? 'Active' : 'Idle'} for{' '}
             {formatDistanceToNow(new Date(agent.last_activity))}
@@ -230,7 +230,7 @@ const AgentCard: React.FC<{
         )}
 
         {agent.tmux_session_name && (
-          <div className="flex items-center text-xs text-gray-500">
+          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
             <Terminal className="w-3 h-3 mr-1" />
             {agent.tmux_session_name}
           </div>
@@ -337,37 +337,37 @@ const Agents: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-800">Agents</h1>
-        <p className="text-gray-600 mt-1">AI agents and their status</p>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Agents</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">AI agents and their status</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <p className="text-sm text-gray-600">Total Active</p>
-          <p className="text-2xl font-bold text-gray-800">{activeAgents.length}</p>
+        <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-lg shadow-md p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Total Active</p>
+          <p className="text-2xl font-bold text-gray-800 dark:text-white">{activeAgents.length}</p>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <p className="text-sm text-gray-600">Working</p>
-          <p className="text-2xl font-bold text-green-600">
+        <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-lg shadow-md p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Working</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">
             {activeAgents.filter(a => a.status === 'working').length}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <p className="text-sm text-gray-600">Stuck</p>
-          <p className="text-2xl font-bold text-yellow-600">
+        <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-lg shadow-md p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Stuck</p>
+          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
             {activeAgents.filter(a => a.status === 'stuck').length}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <p className="text-sm text-gray-600">Terminated</p>
-          <p className="text-2xl font-bold text-gray-500">{terminatedAgents.length}</p>
+        <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-lg shadow-md p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Terminated</p>
+          <p className="text-2xl font-bold text-gray-500 dark:text-gray-400">{terminatedAgents.length}</p>
         </div>
       </div>
 
       {/* Active Agents */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Active Agents</h2>
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Active Agents</h2>
         {activeAgents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeAgents.map((agent) => (
@@ -383,7 +383,7 @@ const Agents: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center text-gray-500">
+          <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-lg shadow-md p-12 text-center text-gray-500 dark:text-gray-400">
             No active agents
           </div>
         )}
@@ -392,7 +392,7 @@ const Agents: React.FC = () => {
       {/* Terminated Agents (collapsed by default) */}
       {terminatedAgents.length > 0 && (
         <details>
-          <summary className="text-lg font-semibold text-gray-600 cursor-pointer">
+          <summary className="text-lg font-semibold text-gray-600 dark:text-gray-300 cursor-pointer">
             Terminated Agents ({terminatedAgents.length})
           </summary>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 opacity-50">

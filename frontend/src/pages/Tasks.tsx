@@ -26,7 +26,7 @@ const TaskRow: React.FC<{
       initial={isNew ? { opacity: 0, backgroundColor: '#DBEAFE' } : false}
       animate={{ opacity: 1, backgroundColor: isNew ? '#DBEAFE' : '#FFFFFF' }}
       transition={{ duration: 0.5, backgroundColor: { duration: 2 } }}
-      className="border-b hover:bg-gray-50 transition-colors"
+      className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
     >
       <div
         className="px-6 py-4 cursor-pointer"
@@ -35,34 +35,34 @@ const TaskRow: React.FC<{
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center space-x-4 flex-1 min-w-0">
             <ChevronRight
-              className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${
+              className={`w-4 h-4 text-gray-400 dark:text-gray-600 transition-transform flex-shrink-0 ${
                 isExpanded ? 'rotate-90' : ''
               }`}
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 min-w-0">
-                <p className="text-sm font-medium text-gray-800 line-clamp-1 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1 flex-1 min-w-0">
                   {task.description}
                 </p>
                 {task.status === 'duplicated' && task.duplicate_of_task_id && (
-                  <span className="flex items-center text-purple-600 text-xs whitespace-nowrap flex-shrink-0">
+                  <span className="flex items-center text-purple-600 dark:text-purple-400 text-xs whitespace-nowrap flex-shrink-0">
                     <Copy className="w-3 h-3 mr-1" />
                     Duplicate of {task.duplicate_of_task_id.substring(0, 8)}
                     {task.similarity_score && (
-                      <span className="ml-1 text-purple-500">
+                      <span className="ml-1 text-purple-500 dark:text-purple-300">
                         ({Math.round(task.similarity_score * 100)}% match)
                       </span>
                     )}
                   </span>
                 )}
                 {task.related_task_ids && task.related_task_ids.length > 0 && (
-                  <span className="flex items-center text-blue-600 text-xs whitespace-nowrap flex-shrink-0">
+                  <span className="flex items-center text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap flex-shrink-0">
                     <Link2 className="w-3 h-3 mr-1" />
                     {task.related_task_ids.length} related
                   </span>
                 )}
               </div>
-              <div className="flex items-center mt-1 space-x-4 text-xs text-gray-500">
+              <div className="flex items-center mt-1 space-x-4 text-xs text-gray-500 dark:text-gray-400">
                 <span className="flex items-center">
                   <Clock className="w-3 h-3 mr-1" />
                   {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
@@ -94,10 +94,10 @@ const TaskRow: React.FC<{
             <span
               className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
                 task.priority === 'high'
-                  ? 'bg-red-100 text-red-700'
+                  ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200'
                   : task.priority === 'medium'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-gray-100 text-gray-700'
+                  ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
               }`}
             >
               {task.priority}
@@ -107,7 +107,7 @@ const TaskRow: React.FC<{
                 e.stopPropagation();
                 onViewDetails?.(task.id);
               }}
-              className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 transition-colors flex items-center whitespace-nowrap flex-shrink-0"
+              className="px-3 py-1 bg-blue-600 dark:bg-blue-700 text-white rounded-md text-xs hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center whitespace-nowrap flex-shrink-0"
               title="View full task details"
             >
               <FileText className="w-3 h-3 mr-1" />
@@ -126,28 +126,28 @@ const TaskRow: React.FC<{
             transition={{ duration: 0.3 }}
             className="px-6 pb-4 overflow-hidden"
           >
-            <div className="pl-8 pt-2 border-t">
+            <div className="pl-8 pt-2 border-t border-gray-200 dark:border-gray-700">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-600 font-medium">Task ID</p>
-                  <p className="text-gray-800 font-mono text-xs">{task.id}</p>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">Task ID</p>
+                  <p className="text-gray-800 dark:text-gray-200 font-mono text-xs">{task.id}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 font-medium">Completion Criteria</p>
-                  <p className="text-gray-800">{task.done_definition}</p>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">Completion Criteria</p>
+                  <p className="text-gray-800 dark:text-gray-200">{task.done_definition}</p>
                 </div>
                 {task.started_at && (
                   <div>
-                    <p className="text-gray-600 font-medium">Started At</p>
-                    <p className="text-gray-800">
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">Started At</p>
+                    <p className="text-gray-800 dark:text-gray-200">
                       {formatDistanceToNow(new Date(task.started_at), { addSuffix: true })}
                     </p>
                   </div>
                 )}
                 {task.completed_at && (
                   <div>
-                    <p className="text-gray-600 font-medium">Completed At</p>
-                    <p className="text-gray-800">
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">Completed At</p>
+                    <p className="text-gray-800 dark:text-gray-200">
                       {formatDistanceToNow(new Date(task.completed_at), { addSuffix: true })}
                     </p>
                   </div>
@@ -312,8 +312,8 @@ const Tasks: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <p className="text-red-600">Failed to load tasks</p>
+      <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-lg p-6">
+        <p className="text-red-600 dark:text-red-200">Failed to load tasks</p>
       </div>
     );
   }
@@ -321,8 +321,8 @@ const Tasks: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-800">Tasks</h1>
-        <p className="text-gray-600 mt-1">All system tasks and their status</p>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Tasks</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">All system tasks and their status</p>
       </div>
 
       {/* Queue Section */}
@@ -345,14 +345,14 @@ const Tasks: React.FC = () => {
       />
 
       {/* Tasks List */}
-      <div className="bg-white rounded-lg shadow-md">
-        <div className="px-6 py-4 border-b">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-800">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
                 Tasks
               </h2>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                 {filteredTasks.length === tasks.length ? (
                   `${tasks.length} total tasks`
                 ) : (
@@ -361,9 +361,9 @@ const Tasks: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-green-50 rounded-full">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-700 font-medium">Live</span>
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900 rounded-full">
+                <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-xs text-green-700 dark:text-green-200 font-medium">Live</span>
               </div>
             </div>
           </div>
@@ -381,11 +381,11 @@ const Tasks: React.FC = () => {
             ))
           ) : (
             <div className="p-12 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                <Search className="w-8 h-8 text-gray-400 dark:text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-800 mb-2">No tasks found</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">No tasks found</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 {tasks.length === 0
                   ? "There are no tasks in the system yet."
                   : "Try adjusting your filters or search criteria."}
@@ -400,7 +400,7 @@ const Tasks: React.FC = () => {
                     assignment: 'all',
                     dateRange: 'all',
                   })}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
                   Clear All Filters
                 </button>

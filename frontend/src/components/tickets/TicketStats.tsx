@@ -251,7 +251,7 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
+            <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500">
               No data
             </div>
           )}
@@ -259,15 +259,15 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
       </div>
 
       {/* Board Configuration */}
-      <div className="bg-white rounded-lg border shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Board Configuration</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Board Configuration</h3>
         <div className="space-y-3">
           <div>
-            <span className="text-sm text-gray-600">Board Name:</span>
-            <span className="ml-2 font-medium">{stats.board_config.name}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Board Name:</span>
+            <span className="ml-2 font-medium text-gray-900 dark:text-white">{stats.board_config.name}</span>
           </div>
           <div>
-            <span className="text-sm text-gray-600">Columns:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Columns:</span>
             <div className="flex flex-wrap gap-2 mt-2">
               {stats.board_config.columns
                 .sort((a, b) => a.order - b.order)
@@ -287,8 +287,8 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
             </div>
           </div>
           <div>
-            <span className="text-sm text-gray-600">Settings:</span>
-            <div className="flex flex-wrap gap-4 mt-2 text-sm">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Settings:</span>
+            <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-900 dark:text-white">
               <span className="flex items-center">
                 Auto-assign: {stats.board_config.auto_assign ? '✓' : '✗'}
               </span>

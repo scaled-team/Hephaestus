@@ -785,8 +785,8 @@ const Results: React.FC = () => {
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Results</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Results</h1>
+            <p className="text-gray-600 dark:text-gray-400">
               Monitor submitted solutions, validation status, and supporting evidence
             </p>
           </div>
@@ -804,7 +804,7 @@ const Results: React.FC = () => {
       </div>
 
       {connectivityWarning && (
-        <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+        <div className="rounded border border-amber-200 bg-amber-50 dark:bg-amber-900/30 dark:border-amber-700 p-3 text-sm text-amber-700 dark:text-amber-300">
           {connectivityWarning}
         </div>
       )}
@@ -813,15 +813,15 @@ const Results: React.FC = () => {
         {metricCards.map((metric) => {
           const Icon = metric.icon;
           return (
-            <Card key={metric.key} className={cn('border-l-4', metric.accent)}>
+            <Card key={metric.key} className={cn('border-l-4 dark:bg-gray-800 dark:border-gray-700', metric.accent)}>
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between text-base font-medium text-gray-600">
+                <CardTitle className="flex items-center justify-between text-base font-medium text-gray-600 dark:text-gray-400">
                   {metric.label}
-                  <Icon className="w-5 h-5 text-gray-400" />
+                  <Icon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-semibold text-gray-900">
+                <p className="text-3xl font-semibold text-gray-900 dark:text-white">
                   {metrics[metric.key as keyof typeof metrics]}
                 </p>
               </CardContent>
@@ -830,10 +830,10 @@ const Results: React.FC = () => {
         })}
       </div>
 
-      <div className="rounded-lg border bg-white shadow-sm">
-        <div className="flex flex-col gap-4 border-b px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm">
+        <div className="flex flex-col gap-4 border-b dark:border-gray-700 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Scope:</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Scope:</span>
             {(['all', 'workflow', 'task'] as ScopeFilter[]).map((option) => (
               <Button
                 key={option}
@@ -861,14 +861,14 @@ const Results: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-b px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+        <div className="flex flex-col gap-4 border-b dark:border-gray-700 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
             <label className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-gray-400" />
+              <Layers className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <select
                 value={workflowId}
                 onChange={(event) => setWorkflowId(event.target.value)}
-                className="rounded border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               >
                 <option value="all">All workflows</option>
                 {workflows.map(([id, name]) => (
@@ -880,11 +880,11 @@ const Results: React.FC = () => {
             </label>
 
             <label className="flex items-center gap-2">
-              <User className="w-4 h-4 text-gray-400" />
+              <User className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <select
                 value={agentId}
                 onChange={(event) => setAgentId(event.target.value)}
-                className="rounded border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               >
                 <option value="all">All agents</option>
                 {agents.map(([id, label]) => (
@@ -896,11 +896,11 @@ const Results: React.FC = () => {
             </label>
 
             <label className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
+              <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <select
                 value={dateRange}
                 onChange={(event) => setDateRange(event.target.value as DateRangeFilter)}
-                className="rounded border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               >
                 <option value="all">All time</option>
                 <option value="24h">Last 24 hours</option>
@@ -912,13 +912,13 @@ const Results: React.FC = () => {
 
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="search"
                 placeholder="Search by summary, ID, or text"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                className="h-10 rounded-md border border-gray-200 pl-10 pr-10 text-sm focus:border-blue-500 focus:outline-none"
+                className="h-10 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white pl-10 pr-10 text-sm focus:border-blue-500 focus:outline-none dark:placeholder-gray-500"
               />
               {activeSearch && (
                 <button
@@ -937,7 +937,7 @@ const Results: React.FC = () => {
         </div>
 
         <div className="px-6 py-4">
-          <div className="hidden border-b pb-3 text-xs font-medium text-gray-500 lg:grid lg:grid-cols-12">
+          <div className="hidden border-b dark:border-gray-700 pb-3 text-xs font-medium text-gray-500 dark:text-gray-400 lg:grid lg:grid-cols-12">
             <span className="col-span-2">Status</span>
             <span className="col-span-4">Summary</span>
             <span className="col-span-2">Workflow</span>
@@ -947,20 +947,20 @@ const Results: React.FC = () => {
           </div>
 
           {isLoading && (
-            <div className="flex h-32 items-center justify-center text-gray-500">
+            <div className="flex h-32 items-center justify-center text-gray-500 dark:text-gray-400">
               Loading results...
             </div>
           )}
 
           {error && (
-            <div className="rounded border border-red-200 bg-red-50 p-4 text-red-600">
+            <div className="rounded border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30 p-4 text-red-600 dark:text-red-400">
               Failed to load results. Please try refreshing.
             </div>
           )}
 
           {!isLoading && !error && results.length === 0 && (
-            <div className="flex h-32 flex-col items-center justify-center text-gray-500">
-              <ClipboardList className="mb-2 h-6 w-6 text-gray-400" />
+            <div className="flex h-32 flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+              <ClipboardList className="mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
               <p>No results match the current filters.</p>
             </div>
           )}
@@ -974,9 +974,9 @@ const Results: React.FC = () => {
                   <motion.div
                     key={result.result_id}
                     initial={isHighlighted ? { backgroundColor: '#DBEAFE' } : false}
-                    animate={{ backgroundColor: isHighlighted ? '#DBEAFE' : '#FFFFFF' }}
+                    animate={{ backgroundColor: isHighlighted ? '#DBEAFE' : 'var(--bg-color)' }}
                     transition={{ duration: 0.5, backgroundColor: { duration: 2.5 } }}
-                    className="rounded border border-gray-100 bg-white shadow-sm"
+                    className="rounded border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm"
                   >
                     <div
                       className="flex flex-col gap-3 px-4 py-3 lg:grid lg:grid-cols-12 lg:items-center"
@@ -984,7 +984,7 @@ const Results: React.FC = () => {
                       <div className="flex items-center justify-between lg:col-span-2">
                         <button
                           onClick={() => handleToggleRow(result.result_id)}
-                          className="flex items-center gap-2 text-left text-sm font-medium text-gray-800 hover:text-blue-600"
+                          className="flex items-center gap-2 text-left text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400"
                         >
                           <span className="lg:hidden">
                             {isExpanded ? (
@@ -1001,10 +1001,10 @@ const Results: React.FC = () => {
                       </div>
 
                       <div className="lg:col-span-4">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-3" title={result.summary || undefined}>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-3" title={result.summary || undefined}>
                           {truncateText(result.summary, 240)}
                         </p>
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                           <span>
                             Submitted {formatRelativeTime(result.created_at)}
                           </span>
@@ -1024,12 +1024,12 @@ const Results: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 lg:col-span-2">
-                        <Badge variant="outline" className="hidden uppercase lg:inline-flex">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400 lg:col-span-2">
+                        <Badge variant="outline" className="hidden uppercase lg:inline-flex dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">
                           {result.scope}
                         </Badge>
                         <div className="flex items-center gap-2">
-                          <GitBranch className="w-4 h-4 text-gray-400" />
+                          <GitBranch className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                           {result.workflow_name || result.workflow_id || '—'}
                         </div>
                       </div>
@@ -1037,10 +1037,10 @@ const Results: React.FC = () => {
                       <div className="lg:col-span-2">
                         {result.task_id ? (
                           <div className="flex items-center gap-2 text-sm">
-                            <FileText className="w-4 h-4 text-gray-400" />
+                            <FileText className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                             <button
                               type="button"
-                              className="text-blue-600 hover:text-blue-700"
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 setSelectedTaskId(result.task_id!);
@@ -1050,12 +1050,12 @@ const Results: React.FC = () => {
                             </button>
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-500">Workflow-level</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Workflow-level</span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-sm text-gray-600 lg:col-span-1">
-                        <User className="w-4 h-4 text-gray-400" />
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 lg:col-span-1">
+                        <User className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                         {result.agent_label || result.agent_id}
                       </div>
 

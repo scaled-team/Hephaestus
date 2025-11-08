@@ -110,7 +110,7 @@ export default function Phases() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-lg">Loading workflow...</div>
+        <div className="text-lg text-gray-600 dark:text-gray-400">Loading workflow...</div>
       </div>
     );
   }
@@ -118,279 +118,324 @@ export default function Phases() {
   if (!workflow || workflow.total_phases === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <Layers className="h-12 w-12 text-muted-foreground" />
-        <div className="text-lg text-muted-foreground">No workflow loaded</div>
-        <p className="text-sm text-muted-foreground">Start by loading a workflow with phases</p>
+        <Layers className="h-16 w-16 text-gray-400 dark:text-gray-600" />
+        <div className="text-xl font-semibold text-gray-700 dark:text-gray-300">No workflow loaded</div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Start by loading a workflow with phases</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Layers className="h-8 w-8" />
-            Workflow: {workflow.name}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {workflow.total_phases} phases • Status: {workflow.status}
-          </p>
+    <div className="h-full flex flex-col">
+      {/* Compact Header */}
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Layers className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                {workflow.name}
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {workflow.total_phases} phases • {workflow.status}
+              </p>
+            </div>
+          </div>
+          <Button onClick={fetchWorkflow} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
-        <Button onClick={fetchWorkflow} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
       </div>
 
-      {/* Active Phase Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Phase Distribution</CardTitle>
-          <CardDescription>Current activity across all phases</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="relative h-12 bg-muted rounded-lg overflow-hidden">
-            <div className="absolute inset-0 flex">
-              {workflow.phases.map((phase) => {
-                const width = `${100 / workflow.total_phases}%`;
-                const isActive = phase.active_agents > 0;
-                return (
-                  <div
-                    key={phase.id}
-                    className="relative flex-1 border-r border-background last:border-r-0"
-                    style={{
-                      backgroundColor: isActive ? getPhaseColor(phase.order, workflow.total_phases) : 'transparent',
-                    }}
-                  >
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-xs">
-                      <span className="font-medium">P{phase.order}</span>
-                      <span className="text-[10px]">
-                        {phase.active_agents}/{phase.total_tasks}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <span>agents/tasks</span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto p-6 space-y-6 bg-gray-50 dark:bg-gray-900">
 
-      {/* Phase Cards */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Phases</CardTitle>
-          <CardDescription>Detailed view of each phase</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="w-full whitespace-nowrap rounded-md">
-            <div className="flex gap-4 pb-4">
-              {workflow.phases.map((phase) => (
-                <Card
-                  key={phase.id}
-                  className="w-[280px] flex-shrink-0"
-                  style={{
-                    borderColor: getPhaseColor(phase.order, workflow.total_phases),
-                    borderWidth: '2px',
-                  }}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          style={{
-                            backgroundColor: getPhaseColor(phase.order, workflow.total_phases),
-                            color: phase.order > workflow.total_phases / 2 ? 'white' : 'rgb(30, 58, 138)',
-                          }}
-                        >
-                          Phase {phase.order}
-                        </Badge>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => fetchPhaseDetails(phase.id)}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-                            <DialogHeader>
-                              <DialogTitle>Phase {phase.order}: {phase.name}</DialogTitle>
-                              <DialogDescription>
-                                Detailed phase configuration and requirements
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="mt-4">
-                              {loadingPhase[phase.id] ? (
-                                <div className="flex items-center justify-center h-32">
-                                  <div className="text-sm text-muted-foreground">Loading phase details...</div>
-                                </div>
-                              ) : phaseData[phase.id]?.error ? (
-                                <div className="text-red-500 text-sm">{phaseData[phase.id].error}</div>
-                              ) : phaseData[phase.id] ? (
-                                <ScrollArea className="h-[400px] w-full">
-                                  <div className="space-y-6 pr-4">
-                                    {/* Description */}
-                                    <div>
-                                      <h4 className="font-semibold text-lg mb-2">Description</h4>
-                                      <p className="text-sm text-muted-foreground leading-relaxed">
-                                        {phaseData[phase.id].description}
-                                      </p>
-                                    </div>
-
-                                    {/* Done Definitions */}
-                                    <div>
-                                      <h4 className="font-semibold text-lg mb-2">Done Definitions</h4>
-                                      <ul className="space-y-1">
-                                        {phaseData[phase.id].done_definitions?.map((def: string, index: number) => (
-                                          <li key={index} className="flex items-start gap-2 text-sm">
-                                            <span className="text-green-500 mt-1">✓</span>
-                                            <span>{def}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-
-                                    {/* Additional Notes */}
-                                    <div>
-                                      <h4 className="font-semibold text-lg mb-2">Additional Notes</h4>
-                                      <p className="text-sm text-muted-foreground leading-relaxed bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
-                                        {phaseData[phase.id].additional_notes}
-                                      </p>
-                                    </div>
-
-                                    {/* Expected Outputs */}
-                                    <div>
-                                      <h4 className="font-semibold text-lg mb-2">Expected Outputs</h4>
-                                      <p className="text-sm text-muted-foreground leading-relaxed bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-                                        {phaseData[phase.id].outputs}
-                                      </p>
-                                    </div>
-
-                                    {/* Next Steps */}
-                                    <div>
-                                      <h4 className="font-semibold text-lg mb-2">Next Steps</h4>
-                                      <p className="text-sm text-muted-foreground leading-relaxed bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md">
-                                        {phaseData[phase.id].next_steps}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </ScrollArea>
-                              ) : (
-                                <div className="text-sm text-muted-foreground">Click to load phase details...</div>
-                              )}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      {phase.active_agents > 0 && (
-                        <Badge variant="default" className="bg-green-500">
-                          Active
-                        </Badge>
-                      )}
-                    </div>
-                    <CardTitle className="text-lg mt-2">{phase.name}</CardTitle>
-                    <CardDescription className="text-xs line-clamp-2">
-                      {phase.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          <strong>{phase.active_agents}</strong> active agents
+        {/* Active Phase Distribution */}
+        <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Active Phase Distribution</CardTitle>
+            <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Current activity across all phases</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="relative h-16 bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="absolute inset-0 flex">
+                {workflow.phases.map((phase) => {
+                  const width = `${100 / workflow.total_phases}%`;
+                  const isActive = phase.active_agents > 0;
+                  return (
+                    <div
+                      key={phase.id}
+                      className="relative flex-1 border-r border-gray-300 dark:border-gray-600 last:border-r-0"
+                      style={{
+                        backgroundColor: isActive ? getPhaseColor(phase.order, workflow.total_phases) : 'transparent',
+                      }}
+                    >
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className={cn(
+                          "font-bold text-sm drop-shadow-sm",
+                          isActive ? "text-white" : "text-gray-900 dark:text-white"
+                        )}>
+                          P{phase.order}
+                        </span>
+                        <span className={cn(
+                          "text-xs font-semibold drop-shadow-sm",
+                          isActive ? "text-white" : "text-gray-700 dark:text-gray-300"
+                        )}>
+                          {phase.active_agents}/{phase.total_tasks}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <ListTodo className="h-4 w-4 text-muted-foreground" />
-                        <div className="text-sm space-y-1">
-                          <div>Total: <strong>{phase.total_tasks}</strong></div>
-                          <div>Done: <strong>{phase.completed_tasks}</strong></div>
-                          <div>Active: <strong>{phase.active_tasks}</strong></div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex justify-between mt-3 text-xs text-gray-500 dark:text-gray-400">
+              <span>Active agents / Total tasks</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Phase Cards */}
+        <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Phases</CardTitle>
+            <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Detailed view of each phase</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="w-full whitespace-nowrap rounded-md">
+              <div className="flex gap-4 pb-4">
+                {workflow.phases.map((phase) => (
+                  <Card
+                    key={phase.id}
+                    className="w-[320px] flex-shrink-0 bg-white dark:bg-gray-800 border-2 hover:shadow-lg transition-shadow"
+                    style={{
+                      borderColor: getPhaseColor(phase.order, workflow.total_phases),
+                    }}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className="font-bold text-sm px-3 py-1"
+                            style={{
+                              backgroundColor: getPhaseColor(phase.order, workflow.total_phases),
+                              color: 'white',
+                              borderColor: getPhaseColor(phase.order, workflow.total_phases),
+                            }}
+                          >
+                            Phase {phase.order}
+                          </Badge>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                onClick={() => fetchPhaseDetails(phase.id)}
+                              >
+                                <Eye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                              <DialogHeader>
+                                <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                                  Phase {phase.order}: {phase.name}
+                                </DialogTitle>
+                                <DialogDescription className="text-gray-600 dark:text-gray-400">
+                                  Detailed phase configuration and requirements
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="mt-4">
+                                {loadingPhase[phase.id] ? (
+                                  <div className="flex items-center justify-center h-32">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">Loading phase details...</div>
+                                  </div>
+                                ) : phaseData[phase.id]?.error ? (
+                                  <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950 p-3 rounded-md">
+                                    {phaseData[phase.id].error}
+                                  </div>
+                                ) : phaseData[phase.id] ? (
+                                  <ScrollArea className="h-[400px] w-full">
+                                    <div className="space-y-6 pr-4">
+                                      {/* Description */}
+                                      <div>
+                                        <h4 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">Description</h4>
+                                        <p className="text-base text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                                          {phaseData[phase.id].description}
+                                        </p>
+                                      </div>
+
+                                      {/* Done Definitions */}
+                                      <div>
+                                        <h4 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">Done Definitions</h4>
+                                        <ul className="space-y-3 bg-green-50 dark:bg-green-950 p-4 rounded-md border border-green-200 dark:border-green-800">
+                                          {phaseData[phase.id].done_definitions?.map((def: string, index: number) => (
+                                            <li key={index} className="flex items-start gap-3 text-base">
+                                              <span className="text-green-600 dark:text-green-400 mt-0.5 font-bold text-lg">✓</span>
+                                              <span className="text-gray-800 dark:text-gray-200 leading-relaxed">{def}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+
+                                      {/* Additional Notes */}
+                                      <div>
+                                        <h4 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">Additional Notes</h4>
+                                        <p className="text-base text-gray-800 dark:text-gray-200 leading-relaxed bg-blue-50 dark:bg-blue-950 p-4 rounded-md border border-blue-200 dark:border-blue-800">
+                                          {phaseData[phase.id].additional_notes}
+                                        </p>
+                                      </div>
+
+                                      {/* Expected Outputs */}
+                                      <div>
+                                        <h4 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">Expected Outputs</h4>
+                                        <p className="text-base text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                                          {phaseData[phase.id].outputs}
+                                        </p>
+                                      </div>
+
+                                      {/* Next Steps */}
+                                      <div>
+                                        <h4 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">Next Steps</h4>
+                                        <p className="text-base text-gray-800 dark:text-gray-200 leading-relaxed bg-purple-50 dark:bg-purple-950 p-4 rounded-md border border-purple-200 dark:border-purple-800">
+                                          {phaseData[phase.id].next_steps}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </ScrollArea>
+                                ) : (
+                                  <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
+                                    Click the eye icon to load phase details...
+                                  </div>
+                                )}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                        {phase.active_agents > 0 && (
+                          <Badge variant="default" className="bg-green-600 dark:bg-green-700 text-white border-0">
+                            Active
+                          </Badge>
+                        )}
+                      </div>
+                      <CardTitle className="text-lg font-bold mt-2 text-gray-900 dark:text-white leading-tight">
+                        {phase.name}
+                      </CardTitle>
+                      <CardDescription className="text-sm line-clamp-2 text-gray-700 dark:text-gray-300 leading-relaxed mt-1">
+                        {phase.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3 bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-3">
+                          <Users className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                          <span className="text-base text-gray-900 dark:text-white">
+                            <strong className="font-bold text-lg">{phase.active_agents}</strong>
+                            <span className="text-gray-600 dark:text-gray-400 ml-1">active agents</span>
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <ListTodo className="h-5 w-5 text-purple-600 dark:text-purple-400 mt-1 flex-shrink-0" />
+                          <div className="text-base space-y-1.5">
+                            <div className="text-gray-900 dark:text-white">
+                              Total: <strong className="font-bold text-lg">{phase.total_tasks}</strong>
+                            </div>
+                            <div className="text-green-700 dark:text-green-300">
+                              Done: <strong className="font-bold text-lg text-green-600 dark:text-green-400">{phase.completed_tasks}</strong>
+                            </div>
+                            <div className="text-blue-700 dark:text-blue-300">
+                              Active: <strong className="font-bold text-lg text-blue-600 dark:text-blue-400">{phase.active_tasks}</strong>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <Button
-                      onClick={() => navigateToTasks(phase.id)}
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                    >
-                      View Tasks
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-        </CardContent>
-      </Card>
-
-      {/* Live Activity Feed */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Live Activity Feed</CardTitle>
-          <CardDescription>Real-time phase activities from Hephaestus</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[300px] w-full rounded-md border p-4">
-            {activities.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                No activities yet. Activities will appear here as agents work.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {activities.map((activity, index) => (
-                  <div
-                    key={`${activity.timestamp}-${index}`}
-                    className={cn(
-                      "flex items-start gap-2 text-sm py-2 px-3 rounded-md",
-                      "hover:bg-muted/50 transition-colors",
-                      activity.type === 'cross_phase_task' && "border-l-2 border-blue-500"
-                    )}
-                  >
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(activity.timestamp).toLocaleTimeString()}
-                    </span>
-                    <span className="flex-1">
-                      {activity.type === 'cross_phase_task' && (
-                        <>
-                          Agent {activity.agent_id?.slice(0, 8)} (P{activity.from_phase}) →
-                          task in P{activity.to_phase}
-                        </>
-                      )}
-                      {activity.type === 'task_completed' && (
-                        <>Task completed in P{activity.to_phase}</>
-                      )}
-                      {activity.type === 'agent_started' && (
-                        <>Agent {activity.agent_id?.slice(0, 8)} started in P{activity.to_phase}</>
-                      )}
-                      {activity.type === 'agent_stopped' && (
-                        <>Agent {activity.agent_id?.slice(0, 8)} stopped in P{activity.from_phase}</>
-                      )}
-                      {activity.description && (
-                        <span className="text-muted-foreground ml-1">• {activity.description}</span>
-                      )}
-                    </span>
-                  </div>
+                      <Button
+                        onClick={() => navigateToTasks(phase.id)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        View Tasks
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-            )}
-          </ScrollArea>
-        </CardContent>
-      </Card>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Live Activity Feed */}
+        <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Live Activity Feed</CardTitle>
+            <CardDescription className="text-sm text-gray-600 dark:text-gray-400">Real-time phase activities from Hephaestus</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[300px] w-full rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4">
+              {activities.length === 0 ? (
+                <div className="text-center text-gray-600 dark:text-gray-400 py-12">
+                  <div className="text-base font-semibold">No activities yet</div>
+                  <div className="text-sm mt-1">Activities will appear here as agents work</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {activities.map((activity, index) => (
+                    <div
+                      key={`${activity.timestamp}-${index}`}
+                      className={cn(
+                        "flex items-start gap-3 py-3 px-4 rounded-md bg-white dark:bg-gray-800",
+                        "hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700",
+                        activity.type === 'cross_phase_task' && "border-l-4 border-l-blue-500 dark:border-l-blue-400"
+                      )}
+                    >
+                      <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap font-mono mt-0.5 font-semibold">
+                        {new Date(activity.timestamp).toLocaleTimeString()}
+                      </span>
+                      <span className="flex-1 text-base text-gray-900 dark:text-gray-100">
+                        {activity.type === 'cross_phase_task' && (
+                          <>
+                            <span className="font-semibold text-gray-900 dark:text-white">Agent {activity.agent_id?.slice(0, 8)}</span>
+                            <span className="text-gray-600 dark:text-gray-400"> (P{activity.from_phase}) → task in </span>
+                            <span className="font-semibold text-gray-900 dark:text-white">P{activity.to_phase}</span>
+                          </>
+                        )}
+                        {activity.type === 'task_completed' && (
+                          <>
+                            <span className="text-green-600 dark:text-green-400 font-semibold">Task completed</span>
+                            <span className="text-gray-600 dark:text-gray-400"> in P{activity.to_phase}</span>
+                          </>
+                        )}
+                        {activity.type === 'agent_started' && (
+                          <>
+                            <span className="font-semibold text-gray-900 dark:text-white">Agent {activity.agent_id?.slice(0, 8)}</span>
+                            <span className="text-gray-600 dark:text-gray-400"> started in </span>
+                            <span className="font-semibold text-gray-900 dark:text-white">P{activity.to_phase}</span>
+                          </>
+                        )}
+                        {activity.type === 'agent_stopped' && (
+                          <>
+                            <span className="font-semibold text-gray-900 dark:text-white">Agent {activity.agent_id?.slice(0, 8)}</span>
+                            <span className="text-gray-600 dark:text-gray-400"> stopped in </span>
+                            <span className="font-semibold text-gray-900 dark:text-white">P{activity.from_phase}</span>
+                          </>
+                        )}
+                        {activity.description && (
+                          <span className="text-gray-600 dark:text-gray-400 ml-1">• {activity.description}</span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

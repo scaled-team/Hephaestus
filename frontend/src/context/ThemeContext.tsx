@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -14,6 +14,7 @@ const THEME_KEY = 'theme-preference';
 
 // Detect system preference for dark mode
 const getSystemPreference = (): boolean => {
+  if (typeof window === 'undefined') return false;
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 };
 
@@ -27,14 +28,23 @@ const getEffectiveTheme = (theme: Theme): 'light' | 'dark' => {
 
 // Apply theme to DOM
 const applyTheme = (theme: Theme) => {
+  if (typeof window === 'undefined' || !document) return;
+
   const effectiveTheme = getEffectiveTheme(theme);
   const htmlElement = document.documentElement;
 
+  console.log('[ThemeContext] applyTheme called with:', { theme, effectiveTheme });
+
+  // Add or remove the 'dark' class
   if (effectiveTheme === 'dark') {
     htmlElement.classList.add('dark');
+    console.log('[ThemeContext] Added dark class');
   } else {
     htmlElement.classList.remove('dark');
+    console.log('[ThemeContext] Removed dark class');
   }
+
+  console.log('[ThemeContext] HTML classes now:', Array.from(htmlElement.classList));
 };
 
 interface ThemeProviderProps {
@@ -45,26 +55,39 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     // Get saved preference from localStorage
     const saved = localStorage.getItem(THEME_KEY) as Theme | null;
-    return saved || 'system';
+    const preferredTheme = saved || 'system';
+    console.log('[ThemeProvider] Initial theme:', preferredTheme);
+    return preferredTheme;
   });
 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(
-    getEffectiveTheme(theme) === 'dark'
-  );
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const isDark = getEffectiveTheme(theme) === 'dark';
+    console.log('[ThemeProvider] Initial isDarkMode:', isDark);
+    return isDark;
+  });
 
-  // Apply theme when it changes
+  // Apply theme on mount and when it changes
   useEffect(() => {
+    console.log('[ThemeProvider] Theme effect triggered with theme:', theme);
     applyTheme(theme);
-    setIsDarkMode(getEffectiveTheme(theme) === 'dark');
+    const newIsDark = getEffectiveTheme(theme) === 'dark';
+    setIsDarkMode(newIsDark);
+    console.log('[ThemeProvider] Set isDarkMode to:', newIsDark);
   }, [theme]);
 
   // Listen for system preference changes (when theme is set to 'system')
   useEffect(() => {
-    if (theme !== 'system') return;
+    if (theme !== 'system') {
+      console.log('[ThemeProvider] Not listening for system changes, theme is:', theme);
+      return;
+    }
+
+    console.log('[ThemeProvider] Setting up system preference listener');
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      setIsDarkMode(getSystemPreference());
+    const handleChange = (e: MediaQueryListEvent) => {
+      console.log('[ThemeProvider] System preference changed:', e.matches);
+      setIsDarkMode(e.matches);
       applyTheme('system');
     };
 
@@ -74,16 +97,18 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
     // Older browsers (deprecated but kept for compatibility)
-    else if (mediaQuery.addListener) {
-      mediaQuery.addListener(handleChange);
-      return () => mediaQuery.removeListener(handleChange);
+    else if ((mediaQuery as any).addListener) {
+      (mediaQuery as any).addListener(handleChange);
+      return () => (mediaQuery as any).removeListener(handleChange);
     }
   }, [theme]);
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = useCallback((newTheme: Theme) => {
+    console.log('[ThemeProvider] setTheme called with:', newTheme);
     setThemeState(newTheme);
     localStorage.setItem(THEME_KEY, newTheme);
-  };
+    console.log('[ThemeProvider] Saved theme to localStorage:', newTheme);
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, isDarkMode, setTheme }}>

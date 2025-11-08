@@ -19,7 +19,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
         'verified',
       ].includes(normalized)
     ) {
-      return 'bg-green-100 text-green-800';
+      return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
     }
 
     if (
@@ -30,7 +30,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
         'running',
       ].includes(normalized)
     ) {
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200';
     }
 
     if (
@@ -41,7 +41,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
         'unverified',
       ].includes(normalized)
     ) {
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200';
     }
 
     if (
@@ -53,28 +53,28 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
         'disputed',
       ].includes(normalized)
     ) {
-      return 'bg-red-100 text-red-800';
+      return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
     }
 
     if (
       ['stuck', 'warning', 'attention'].includes(normalized)
     ) {
-      return 'bg-orange-100 text-orange-800';
+      return 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200';
     }
 
     if (normalized === 'blocked') {
-      return 'bg-red-100 text-red-800 border border-red-300';
+      return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700';
     }
 
     if (normalized === 'duplicated') {
-      return 'bg-purple-100 text-purple-800';
+      return 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200';
     }
 
     if (normalized === 'queued') {
-      return 'bg-cyan-100 text-cyan-800';
+      return 'bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200';
     }
 
-    return 'bg-gray-100 text-gray-800';
+    return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200';
   };
 
   const sizeClasses = {

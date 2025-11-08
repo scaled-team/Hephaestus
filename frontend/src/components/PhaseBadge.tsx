@@ -16,12 +16,12 @@ export function PhaseBadge({ phaseOrder, phaseName, totalPhases = 3, className }
   };
 
   const backgroundColor = getPhaseIntensity();
-  const textColor = phaseOrder > totalPhases / 2 ? 'white' : 'rgb(30, 58, 138)'; // Darker text for lighter backgrounds
+  const textColor = phaseOrder > totalPhases / 2 ? 'white' : 'rgb(30, 58, 138)';
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium",
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors",
         className
       )}
       style={{
