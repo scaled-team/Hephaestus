@@ -228,6 +228,9 @@ const NodePreview: React.FC<{ node: any; onClose: () => void }> = ({ node, onClo
   );
 };
 
+// Layout direction type
+type LayoutDirection = 'TB' | 'LR';
+
 const Graph: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -240,6 +243,7 @@ const Graph: React.FC = () => {
   const [columnHeaders, setColumnHeaders] = useState<{ label: string; x: number; width: number; type: 'agents' | 'tasks' }[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(15);
+  const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('LR');
   const { subscribe } = useWebSocket();
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -383,8 +387,9 @@ const Graph: React.FC = () => {
     // Track headers
     const headers: { label: string; x: number; width: number; type: 'agents' | 'tasks' }[] = [];
 
-    // Position nodes in each column
+    // Position nodes in each column based on layout direction
     let currentX = startX;
+    let currentY = startY;
 
     columns.forEach((column) => {
       if (column.nodes.length === 0 && column.id !== 'external_agents') {
@@ -398,48 +403,86 @@ const Graph: React.FC = () => {
         return a.id.localeCompare(b.id);
       });
 
-      // Calculate vertical positions
-      const totalHeight = column.nodes.length * (nodeHeight + nodeSpacing);
-      const columnStartY = startY + Math.max(0, (600 - totalHeight) / 2);
+      if (layoutDirection === 'LR') {
+        // Left-to-Right layout (original)
+        const totalHeight = column.nodes.length * (nodeHeight + nodeSpacing);
+        const columnStartY = startY + Math.max(0, (600 - totalHeight) / 2);
 
-      column.nodes.forEach((node, index) => {
-        const y = columnStartY + index * (nodeHeight + nodeSpacing);
+        column.nodes.forEach((node, index) => {
+          const y = columnStartY + index * (nodeHeight + nodeSpacing);
 
-        const isHighlighted = highlightedNodes.has(node.id);
-        const isDimmed = hoveredNode && !isHighlighted;
+          const isHighlighted = highlightedNodes.has(node.id);
+          const isDimmed = hoveredNode && !isHighlighted;
 
-        const reactFlowNode: Node = {
-          id: node.id,
-          type: node.type,
-          position: { x: currentX, y },
-          data: {
-            ...node.data,
-            isHighlighted,
-            isDimmed,
-          },
-          sourcePosition: Position.Right,
-          targetPosition: Position.Left,
-        };
+          const reactFlowNode: Node = {
+            id: node.id,
+            type: node.type,
+            position: { x: currentX, y },
+            data: {
+              ...node.data,
+              isHighlighted,
+              isDimmed,
+            },
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left,
+          };
 
-        nodeMap.set(node.id, reactFlowNode);
-      });
+          nodeMap.set(node.id, reactFlowNode);
+        });
 
-      // Add header for this column
-      headers.push({
-        label: column.label,
-        x: currentX - 50,
-        width: columnWidth,
-        type: column.type
-      });
+        // Add header for this column
+        headers.push({
+          label: column.label,
+          x: currentX - 50,
+          width: columnWidth,
+          type: column.type
+        });
 
-      currentX += columnWidth;
+        currentX += columnWidth;
+      } else {
+        // Top-to-Bottom layout
+        const totalWidth = column.nodes.length * (columnWidth + nodeSpacing);
+        const columnStartX = startX + Math.max(0, (800 - totalWidth) / 2);
+
+        column.nodes.forEach((node, index) => {
+          const x = columnStartX + index * (columnWidth + nodeSpacing);
+
+          const isHighlighted = highlightedNodes.has(node.id);
+          const isDimmed = hoveredNode && !isHighlighted;
+
+          const reactFlowNode: Node = {
+            id: node.id,
+            type: node.type,
+            position: { x, y: currentY },
+            data: {
+              ...node.data,
+              isHighlighted,
+              isDimmed,
+            },
+            sourcePosition: Position.Bottom,
+            targetPosition: Position.Top,
+          };
+
+          nodeMap.set(node.id, reactFlowNode);
+        });
+
+        // Add header for this row (in TB mode, headers are rows)
+        headers.push({
+          label: column.label,
+          x: columnStartX - 50,
+          width: totalWidth + 100,
+          type: column.type
+        });
+
+        currentY += 200; // Move down for next row
+      }
     });
 
     // Update column headers state
     setColumnHeaders(headers);
 
     return Array.from(nodeMap.values());
-  }, [highlightedNodes, hoveredNode]);
+  }, [highlightedNodes, hoveredNode, layoutDirection]);
 
   // Function to find all connected nodes in the chain (excluding external agents)
   const findConnectedChain = useCallback((nodeId: string, graphEdges: GraphEdge[]): { nodes: Set<string>, edges: Set<string> } => {
@@ -645,8 +688,40 @@ const Graph: React.FC = () => {
             </div>
           </div>
 
-          {/* Refresh Controls */}
+          {/* Layout and Refresh Controls */}
           <div className="flex items-center gap-3">
+            {/* Layout Direction */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Layout:</span>
+              <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg border border-gray-200 dark:border-gray-600">
+                <button
+                  onClick={() => setLayoutDirection('LR')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                    layoutDirection === 'LR'
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  title="Left to Right"
+                >
+                  Left-Right
+                </button>
+                <button
+                  onClick={() => setLayoutDirection('TB')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                    layoutDirection === 'TB'
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  title="Top to Bottom"
+                >
+                  Top-Down
+                </button>
+              </div>
+            </div>
+
+            <div className="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+
+            {/* Auto-refresh Controls */}
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Auto-refresh:</span>
               <select

@@ -289,26 +289,26 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center p-4 z-50"
         onClick={onClose}
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <FileText className="w-6 h-6 text-blue-600" />
+                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                     Task Details
                   </h3>
-                  <p className="text-sm text-gray-600 font-mono">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-mono font-medium">
                     {taskDetails?.id || taskId}
                   </p>
                 </div>
@@ -324,14 +324,14 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                       />
                     )}
                     {taskDetails.ticket_id && (
-                      <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 px-3 py-1.5 rounded-lg border border-purple-200 shadow-sm">
+                      <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-950 dark:to-indigo-950 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm">
                         <Ticket className="w-3.5 h-3.5 flex-shrink-0" />
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedTicketId(taskDetails.ticket_id!);
                           }}
-                          className="text-xs font-mono hover:text-purple-900 transition-colors font-medium"
+                          className="text-xs font-mono hover:text-purple-900 dark:hover:text-purple-100 transition-colors font-medium"
                           title={`View ticket: ${taskDetails.ticket_id}`}
                         >
                           {taskDetails.ticket_id!.slice(0, 14)}...
@@ -341,7 +341,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                             e.stopPropagation();
                             copyToClipboard(taskDetails.ticket_id!, 'ticket ID');
                           }}
-                          className="p-1 hover:bg-purple-200 rounded transition-colors flex-shrink-0"
+                          className="p-1 hover:bg-purple-200 dark:hover:bg-purple-800 rounded transition-colors flex-shrink-0"
                           title="Copy ticket ID"
                         >
                           <Copy className="w-3 h-3" />
@@ -401,7 +401,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
 
                 <button
                   onClick={copyTaskDetails}
-                  className="p-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   title="Copy task details"
                 >
                   <Copy className="w-4 h-4" />
@@ -410,7 +410,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                 {onNavigateToGraph && (
                   <button
                     onClick={() => onNavigateToGraph(taskId)}
-                    className="p-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                    className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     title="View in graph"
                   >
                     <GitBranch className="w-4 h-4" />
@@ -419,7 +419,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
 
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+                  className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -439,29 +439,29 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
             {/* Runtime and Basic Info */}
             {taskDetails && (
               <div className="mt-3 grid grid-cols-4 gap-4 text-sm">
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-600 dark:text-gray-400 font-medium">
                   <Clock className="w-4 h-4 mr-2" />
-                  <span className={runtime.isRunning ? 'text-green-600 font-medium' : ''}>
+                  <span className={runtime.isRunning ? 'text-green-600 dark:text-green-400 font-semibold' : ''}>
                     {runtime.runtimeDisplay}
                   </span>
                   {runtime.isRunning && (
-                    <div className="w-2 h-2 bg-green-400 rounded-full ml-2 animate-pulse" />
+                    <div className="w-2 h-2 bg-green-400 dark:bg-green-500 rounded-full ml-2 animate-pulse" />
                   )}
                 </div>
 
-                <div className="text-gray-600">
-                  Priority: <span className={`font-medium ${
-                    taskDetails.priority === 'high' ? 'text-red-600' :
-                    taskDetails.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                <div className="text-gray-600 dark:text-gray-400 font-medium">
+                  Priority: <span className={`font-semibold ${
+                    taskDetails.priority === 'high' ? 'text-red-600 dark:text-red-400' :
+                    taskDetails.priority === 'medium' ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'
                   }`}>{taskDetails.priority}</span>
                 </div>
 
-                <div className="text-gray-600">
+                <div className="text-gray-600 dark:text-gray-400 font-medium">
                   Created: {formatDistanceToNow(new Date(taskDetails.created_at), { addSuffix: true })}
                 </div>
 
                 {taskDetails.estimated_complexity && (
-                  <div className="text-gray-600">
+                  <div className="text-gray-600 dark:text-gray-400 font-medium">
                     Complexity: {taskDetails.estimated_complexity}/10
                   </div>
                 )}
@@ -470,17 +470,17 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
             {isLoading && (
               <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
               </div>
             )}
 
             {error && (
               <div className="p-6 text-center">
-                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <p className="text-red-600">Failed to load task details</p>
+                <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+                <p className="text-red-600 dark:text-red-400 font-medium">Failed to load task details</p>
               </div>
             )}
 
@@ -488,26 +488,26 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
               <div className="p-6 space-y-6">
                 {/* Duplicate Information - Sticky banner when THIS task is duplicated */}
                 {taskDetails.status === 'duplicated' && taskDetails.duplicate_of_task_id && (
-                  <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 px-6 py-4 bg-purple-50 border-b-2 border-purple-200">
+                  <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 px-6 py-4 bg-purple-50 dark:bg-purple-950 border-b-2 border-purple-200 dark:border-purple-700">
                     <div className="flex items-start space-x-3">
-                      <AlertCircle className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                      <AlertCircle className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
-                        <h4 className="font-medium text-purple-800 mb-2">
+                        <h4 className="font-bold text-purple-800 dark:text-purple-200 mb-2">
                           This task is a duplicate
                         </h4>
 
                         <div className="space-y-3">
                           {/* Similarity Score */}
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600">Similarity:</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Similarity:</span>
                             <div className="flex items-center space-x-2">
-                              <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+                              <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                                 <div
-                                  className="h-full bg-purple-600"
+                                  className="h-full bg-purple-600 dark:bg-purple-500"
                                   style={{ width: `${(taskDetails.similarity_score || 0) * 100}%` }}
                                 />
                               </div>
-                              <span className="text-sm font-bold text-purple-700">
+                              <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
                                 {((taskDetails.similarity_score || 0) * 100).toFixed(1)}%
                               </span>
                             </div>
@@ -516,19 +516,19 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                           {/* Original Task */}
                           {originalTask && (
                             <div
-                              className="bg-white rounded-lg p-3 border border-purple-200 cursor-pointer hover:shadow-md transition-all"
+                              className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700 cursor-pointer hover:shadow-md transition-all"
                               onClick={() => onNavigateToTask?.(originalTask.id)}
                             >
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2 mb-1">
-                                    <span className="text-xs font-medium text-purple-600">Original Task:</span>
+                                    <span className="text-xs font-bold text-purple-600 dark:text-purple-400">Original Task:</span>
                                     <StatusBadge status={originalTask.status} size="sm" />
                                   </div>
-                                  <p className="text-sm font-medium text-gray-800 mb-1">
+                                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
                                     {originalTask.description || 'No description'}
                                   </p>
-                                  <div className="flex items-center space-x-3 text-xs text-gray-500">
+                                  <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400 font-medium">
                                     <span>ID: {originalTask.id.slice(0, 8)}...</span>
                                     <span>Created {formatDistanceToNow(new Date(originalTask.created_at), { addSuffix: true })}</span>
                                     {originalTask.assigned_agent_id && (
@@ -536,13 +536,13 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                                     )}
                                   </div>
                                 </div>
-                                <ExternalLink className="w-4 h-4 text-purple-600 ml-3" />
+                                <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400 ml-3" />
                               </div>
                             </div>
                           )}
 
-                          <div className="p-3 bg-purple-100 rounded-lg">
-                            <p className="text-sm text-purple-700">
+                          <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                            <p className="text-sm text-purple-700 dark:text-purple-300">
                               This task was not created because it was determined to be a duplicate of the original task shown above.
                               Tasks are considered duplicates when their semantic similarity exceeds the configured threshold.
                             </p>
@@ -557,7 +557,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                 <div className="space-y-4">
                   <button
                     onClick={() => toggleSection('prompts')}
-                    className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                    className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     <Settings className="w-5 h-5" />
                     <span>Prompts</span>
@@ -574,19 +574,19 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                       >
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-gray-700 flex items-center">
+                            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center">
                               <User className="w-4 h-4 mr-2" />
                               User Prompt
                             </h4>
                             <button
                               onClick={() => copyToClipboard(taskDetails.user_prompt, 'user prompt')}
-                              className="p-1 rounded text-gray-500 hover:text-gray-700"
+                              className="p-1 rounded text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                             >
                               <Copy className="w-3 h-3" />
                             </button>
                           </div>
-                          <div className="h-32 p-3 bg-gray-50 rounded-lg border border-gray-200 overflow-y-auto">
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          <div className="h-32 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                               {taskDetails.user_prompt}
                             </p>
                           </div>
@@ -594,19 +594,19 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-gray-700 flex items-center">
+                            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center">
                               <Bot className="w-4 h-4 mr-2" />
                               System Prompt
                             </h4>
                             <button
                               onClick={() => copyToClipboard(taskDetails.system_prompt || 'No system prompt', 'system prompt')}
-                              className="p-1 rounded text-gray-500 hover:text-gray-700"
+                              className="p-1 rounded text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                             >
                               <Copy className="w-3 h-3" />
                             </button>
                           </div>
-                          <div className="h-32 p-3 bg-gray-50 rounded-lg border border-gray-200 overflow-y-auto">
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          <div className="h-32 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                               {taskDetails.system_prompt || 'No system prompt available'}
                             </p>
                           </div>
@@ -614,19 +614,19 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
 
                         <div className="lg:col-span-2 space-y-2">
                           <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-gray-700 flex items-center">
+                            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center">
                               <CheckCircle className="w-4 h-4 mr-2" />
                               Done Definition
                             </h4>
                             <button
                               onClick={() => copyToClipboard(taskDetails.done_definition, 'done definition')}
-                              className="p-1 rounded text-gray-500 hover:text-gray-700"
+                              className="p-1 rounded text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                             >
                               <Copy className="w-3 h-3" />
                             </button>
                           </div>
-                          <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-700 shadow-sm">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                               {taskDetails.done_definition}
                             </p>
                           </div>
@@ -641,7 +641,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                   <div className="space-y-4">
                     <button
                       onClick={() => toggleSection('trajectory')}
-                      className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                      className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       <Target className="w-5 h-5" />
                       <span>Trajectory Analysis</span>
@@ -657,8 +657,8 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                           className="space-y-4"
                         >
                           {/* Alignment Graph Over Time */}
-                          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                            <h4 className="font-medium text-gray-900 mb-3">Alignment Score Over Time</h4>
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <h4 className="font-bold text-gray-900 dark:text-white mb-3">Alignment Score Over Time</h4>
                             <AlignmentGraph trajectoryHistory={guardianAnalyses.slice().reverse().map((analysis: any) => ({
                               timestamp: analysis.timestamp,
                               alignment_score: analysis.alignment_score || 0,
@@ -669,14 +669,14 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
 
                           {/* Current Alignment */}
                           {guardianAnalyses[0] && (
-                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
                               <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-gray-900">Current Alignment</h4>
+                                <h4 className="font-bold text-gray-900 dark:text-white">Current Alignment</h4>
                                 <span className={cn(
                                   "text-lg font-bold",
-                                  (guardianAnalyses[0].alignment_score || 0) > 0.8 ? "text-green-600" :
-                                  (guardianAnalyses[0].alignment_score || 0) > 0.4 ? "text-yellow-600" :
-                                  "text-red-600"
+                                  (guardianAnalyses[0].alignment_score || 0) > 0.8 ? "text-green-600 dark:text-green-400" :
+                                  (guardianAnalyses[0].alignment_score || 0) > 0.4 ? "text-yellow-600 dark:text-yellow-400" :
+                                  "text-red-600 dark:text-red-400"
                                 )}>
                                   {Math.round((guardianAnalyses[0].alignment_score || 0) * 100)}%
                                 </span>
@@ -692,18 +692,18 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                               />
                               <div className="space-y-2 text-sm">
                                 <div>
-                                  <span className="text-gray-500">Phase:</span>
-                                  <span className="ml-2 font-medium text-gray-900">{guardianAnalyses[0].current_phase || 'Unknown'}</span>
+                                  <span className="text-gray-500 dark:text-gray-400 font-medium">Phase:</span>
+                                  <span className="ml-2 font-semibold text-gray-900 dark:text-gray-100">{guardianAnalyses[0].current_phase || 'Unknown'}</span>
                                 </div>
                                 <div>
-                                  <span className="text-gray-500">Accumulated Goal:</span>
-                                  <div className="mt-1 text-gray-700">
+                                  <span className="text-gray-500 dark:text-gray-400 font-medium">Accumulated Goal:</span>
+                                  <div className="mt-1 text-gray-700 dark:text-gray-300">
                                     {guardianAnalyses[0].accumulated_goal || 'Not specified'}
                                   </div>
                                 </div>
                                 <div>
-                                  <span className="text-gray-500">Current Focus:</span>
-                                  <div className="mt-1 text-gray-700">
+                                  <span className="text-gray-500 dark:text-gray-400 font-medium">Current Focus:</span>
+                                  <div className="mt-1 text-gray-700 dark:text-gray-300">
                                     {guardianAnalyses[0].current_focus || 'Not specified'}
                                   </div>
                                 </div>
@@ -713,46 +713,46 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
 
                           {/* Trajectory History */}
                           <div className="space-y-2">
-                            <h4 className="font-medium text-gray-900">Trajectory History</h4>
+                            <h4 className="font-bold text-gray-900 dark:text-white">Trajectory History</h4>
                             <div className="space-y-2 max-h-64 overflow-y-auto">
                               {guardianAnalyses.map((analysis: any) => (
                                 <div
                                   key={analysis.id}
                                   className={cn(
                                     "border rounded-lg p-3 transition-colors",
-                                    analysis.needs_steering ? "border-yellow-300 bg-yellow-50" : "border-gray-200"
+                                    analysis.needs_steering ? "border-yellow-300 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                                   )}
                                 >
                                   <div className="flex items-start justify-between mb-1">
                                     <div className="flex items-center space-x-2">
                                       {analysis.trajectory_aligned ? (
-                                        <CheckCircle className="w-4 h-4 text-green-600" />
+                                        <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                                       ) : analysis.alignment_score > 0.5 ? (
-                                        <AlertCircle className="w-4 h-4 text-yellow-600" />
+                                        <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                                       ) : (
-                                        <AlertCircle className="w-4 h-4 text-red-600" />
+                                        <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                                       )}
-                                      <span className="text-xs text-gray-500">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                                         {formatDistanceToNow(new Date(analysis.timestamp), { addSuffix: true })}
                                       </span>
                                     </div>
                                     <Badge
                                       variant="outline"
                                       className={cn(
-                                        "text-xs",
-                                        analysis.alignment_score > 0.8 ? "bg-green-100 text-green-700 border-green-300" :
-                                        analysis.alignment_score > 0.4 ? "bg-yellow-100 text-yellow-700 border-yellow-300" :
-                                        "bg-red-100 text-red-700 border-red-300"
+                                        "text-xs font-semibold",
+                                        analysis.alignment_score > 0.8 ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700" :
+                                        analysis.alignment_score > 0.4 ? "bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700" :
+                                        "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700"
                                       )}
                                     >
                                       {Math.round((analysis.alignment_score || 0) * 100)}%
                                     </Badge>
                                   </div>
-                                  <p className="text-sm text-gray-700">
+                                  <p className="text-sm text-gray-700 dark:text-gray-300">
                                     {analysis.trajectory_summary || analysis.progress_assessment || 'No summary available'}
                                   </p>
                                   {analysis.needs_steering && (
-                                    <div className="mt-2 flex items-center text-xs text-yellow-600">
+                                    <div className="mt-2 flex items-center text-xs text-yellow-600 dark:text-yellow-400 font-medium">
                                       <Navigation className="w-3 h-3 mr-1" />
                                       <span>Steering needed: {analysis.steering_type}</span>
                                     </div>
@@ -772,9 +772,9 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                   <div className="space-y-4">
                     <button
                       onClick={() => toggleSection('phase')}
-                      className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                      className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
-                      <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">
+                      <div className="w-5 h-5 bg-blue-500 dark:bg-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
                         {taskDetails.phase_info.order}
                       </div>
                       <span>Phase Information</span>
@@ -787,24 +787,24 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="bg-blue-50 rounded-lg p-4 border border-blue-200"
+                          className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 border border-blue-200 dark:border-blue-700 shadow-sm"
                         >
-                          <h4 className="font-medium text-blue-800 mb-2">
+                          <h4 className="font-bold text-blue-800 dark:text-blue-200 mb-2">
                             Phase {taskDetails.phase_info.order}: {taskDetails.phase_info.name}
                           </h4>
-                          <p className="text-sm text-blue-700 mb-3">
+                          <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
                             {taskDetails.phase_info.description}
                           </p>
 
                           {taskDetails.phase_info.done_definitions.length > 0 && (
                             <div>
-                              <p className="text-sm font-medium text-blue-800 mb-1">
+                              <p className="text-sm font-bold text-blue-800 dark:text-blue-200 mb-1">
                                 Done Definitions:
                               </p>
-                              <ul className="text-sm text-blue-700 space-y-1">
+                              <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
                                 {taskDetails.phase_info.done_definitions.map((def: any, index: any) => (
                                   <li key={index} className="flex items-start">
-                                    <span className="text-blue-500 mr-2">•</span>
+                                    <span className="text-blue-500 dark:text-blue-400 mr-2">•</span>
                                     <span>{def}</span>
                                   </li>
                                 ))}
@@ -813,8 +813,8 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                           )}
 
                           {taskDetails.phase_info.additional_notes && (
-                            <div className="mt-3 pt-3 border-t border-blue-200">
-                              <p className="text-sm text-blue-700">
+                            <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                              <p className="text-sm text-blue-700 dark:text-blue-300">
                                 <strong>Notes:</strong> {taskDetails.phase_info.additional_notes}
                               </p>
                             </div>
@@ -830,7 +830,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                   <div className="space-y-4">
                     <button
                       onClick={() => toggleSection('steering')}
-                      className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                      className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       <Navigation className="w-5 h-5" />
                       <span>Steering Interventions ({steeringInterventions.length})</span>
@@ -850,33 +850,33 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                               <div
                                 key={intervention.id}
                                 className={cn(
-                                  "border rounded-lg p-3",
-                                  intervention.was_successful === false ? "border-red-300 bg-red-50" : "border-gray-200 bg-white"
+                                  "border rounded-lg p-3 shadow-sm",
+                                  intervention.was_successful === false ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                                 )}
                               >
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex items-center space-x-2">
-                                    <Target className="w-4 h-4 text-blue-600" />
-                                    <span className="text-xs text-gray-500">
+                                    <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                                       {formatDistanceToNow(new Date(intervention.timestamp), { addSuffix: true })}
                                     </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     {intervention.steering_type && (
-                                      <Badge variant="outline" className="text-xs bg-gray-50 border-gray-300">
+                                      <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 font-semibold">
                                         {intervention.steering_type}
                                       </Badge>
                                     )}
                                     {intervention.was_successful !== undefined && (
                                       intervention.was_successful ? (
-                                        <CheckCircle className="w-4 h-4 text-green-600" />
+                                        <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                                       ) : (
-                                        <X className="w-4 h-4 text-red-600" />
+                                        <X className="w-4 h-4 text-red-600 dark:text-red-400" />
                                       )
                                     )}
                                   </div>
                                 </div>
-                                <p className="text-sm text-gray-700">
+                                <p className="text-sm text-gray-700 dark:text-gray-300">
                                   {intervention.message}
                                 </p>
                               </div>
@@ -894,7 +894,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                   <div className="space-y-4">
                     <button
                       onClick={() => toggleSection('relatedTasks')}
-                      className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors w-full"
+                      className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors w-full"
                     >
                       <Link className="w-5 h-5" />
                       <span>
@@ -911,8 +911,8 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                           exit={{ height: 0, opacity: 0 }}
                           className="space-y-3"
                         >
-                          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                            <p className="text-sm text-blue-700 mb-3">
+                          <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 border border-blue-200 dark:border-blue-700 shadow-sm">
+                            <p className="text-sm text-blue-700 dark:text-blue-300 mb-3 font-medium">
                               These tasks have similar content but are not duplicates:
                             </p>
                             <div className="space-y-2">
@@ -921,19 +921,19 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                                 taskDetails.related_tasks_details.map((relatedTask: any) => (
                                 <div
                                   key={relatedTask.id}
-                                  className="p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-400 transition-all cursor-pointer"
+                                  className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer"
                                   onClick={() => onNavigateToTask?.(relatedTask.id)}
                                 >
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
-                                      <p className="text-sm text-gray-800 mb-1">
+                                      <p className="text-sm text-gray-800 dark:text-gray-200 mb-1 font-medium">
                                         {relatedTask.description}
                                       </p>
-                                      <div className="flex items-center space-x-3 text-xs text-gray-600">
+                                      <div className="flex items-center space-x-3 text-xs text-gray-600 dark:text-gray-400 font-medium">
                                         <StatusBadge status={relatedTask.status as any} size="sm" />
                                         {relatedTask.similarity_score > 0 && (
-                                          <span className="flex items-center bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                            <span className="font-medium">{(relatedTask.similarity_score * 100).toFixed(1)}%</span> similar
+                                          <span className="flex items-center bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                                            <span className="font-semibold">{(relatedTask.similarity_score * 100).toFixed(1)}%</span> similar
                                           </span>
                                         )}
                                         {relatedTask.created_at && (
@@ -944,7 +944,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                                         )}
                                       </div>
                                     </div>
-                                    <ExternalLink className="w-4 h-4 text-gray-400 ml-2 mt-1" />
+                                    <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 ml-2 mt-1" />
                                   </div>
                                 </div>
                               ))
@@ -954,13 +954,13 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                                   <button
                                     key={relatedId}
                                     onClick={() => onNavigateToTask?.(relatedId)}
-                                    className="w-full p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-400 transition-all text-left"
+                                    className="w-full p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all text-left"
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-800">
+                                      <span className="text-sm text-gray-800 dark:text-gray-200 font-medium">
                                         Task ID: {relatedId.slice(0, 8)}...
                                       </span>
-                                      <ExternalLink className="w-4 h-4 text-gray-400" />
+                                      <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                                     </div>
                                   </button>
                                 ))
@@ -978,19 +978,19 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                   <div className="space-y-4">
                     <button
                       onClick={() => toggleSection('linkedTasks')}
-                      className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors w-full"
+                      className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors w-full"
                     >
                       <GitPullRequest className="w-5 h-5" />
                       <span>Task Hierarchy</span>
                       <div className="flex items-center space-x-2 ml-2">
                         {taskDetails.parent_task && (
-                          <span className="flex items-center text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          <span className="flex items-center text-xs bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-semibold">
                             <ArrowUp className="w-3 h-3 mr-1" />
                             1 parent
                           </span>
                         )}
                         {taskDetails.child_tasks.length > 0 && (
-                          <span className="flex items-center text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                          <span className="flex items-center text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 px-2 py-1 rounded-full font-semibold">
                             <ArrowDown className="w-3 h-3 mr-1" />
                             {taskDetails.child_tasks.length} {taskDetails.child_tasks.length === 1 ? 'child' : 'children'}
                           </span>
@@ -1009,20 +1009,20 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                         >
                           {taskDetails.parent_task && (
                             <div>
-                              <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                                <ArrowUp className="w-4 h-4 mr-2 text-blue-600" />
+                              <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 flex items-center">
+                                <ArrowUp className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
                                 Parent Task
                               </h4>
                               <div
-                                className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                                className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg border-2 border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer shadow-sm hover:shadow-md"
                                 onClick={() => onNavigateToTask?.(taskDetails.parent_task!.id)}
                               >
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
-                                    <p className="text-sm font-semibold text-gray-800 mb-1">
+                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1">
                                       {taskDetails.parent_task.description}
                                     </p>
-                                    <div className="flex items-center space-x-3 text-xs text-gray-600">
+                                    <div className="flex items-center space-x-3 text-xs text-gray-600 dark:text-gray-400 font-medium">
                                       <span className="flex items-center">
                                         <Clock className="w-3 h-3 mr-1" />
                                         Created {taskDetails.parent_task.created_at
@@ -1030,15 +1030,15 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                                           : 'unknown time ago'
                                         }
                                       </span>
-                                      <span className="text-blue-600">
+                                      <span className="text-blue-600 dark:text-blue-400 font-semibold">
                                         This task was created by parent
                                       </span>
                                     </div>
                                   </div>
                                   <div className="flex items-center space-x-2 ml-4">
                                     <StatusBadge status={taskDetails.parent_task.status as any} size="sm" />
-                                    <div className="p-1.5 bg-blue-100 rounded-full">
-                                      <ExternalLink className="w-4 h-4 text-blue-600" />
+                                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900 rounded-full">
+                                      <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     </div>
                                   </div>
                                 </div>
@@ -1048,10 +1048,10 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
 
                           {taskDetails.child_tasks.length > 0 && (
                             <div>
-                              <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                                <ArrowDown className="w-4 h-4 mr-2 text-green-600" />
+                              <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2 flex items-center">
+                                <ArrowDown className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" />
                                 Child Tasks ({taskDetails.child_tasks.length})
-                                <span className="ml-2 text-xs text-gray-500 font-normal">
+                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 font-medium">
                                   Tasks created by this agent
                                 </span>
                               </h4>
@@ -1059,30 +1059,30 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                                 {taskDetails.child_tasks.map((child: any) => (
                                   <div
                                     key={child.id}
-                                    className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 hover:border-green-400 transition-all cursor-pointer hover:shadow-sm"
+                                    className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 rounded-lg border border-green-200 dark:border-green-700 hover:border-green-400 dark:hover:border-green-500 transition-all cursor-pointer hover:shadow-sm"
                                     onClick={() => onNavigateToTask?.(child.id)}
                                   >
                                     <div className="flex items-center justify-between">
                                       <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-800 flex items-center">
-                                          <Users className="w-3 h-3 mr-2 text-green-600" />
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                                          <Users className="w-3 h-3 mr-2 text-green-600 dark:text-green-400" />
                                           {child.description}
                                         </p>
-                                        <p className="text-xs text-gray-500 mt-1">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
                                           Created {formatDistanceToNow(new Date(child.created_at!), { addSuffix: true })}
                                         </p>
                                       </div>
                                       <div className="flex items-center space-x-2">
-                                        <span className={`text-xs px-2 py-1 rounded ${
-                                          child.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                          child.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                          'bg-gray-100 text-gray-700'
+                                        <span className={`text-xs px-2 py-1 rounded font-semibold ${
+                                          child.priority === 'high' ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300' :
+                                          child.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300' :
+                                          'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                                         }`}>
                                           {child.priority}
                                         </span>
                                         <StatusBadge status={child.status as any} size="sm" />
-                                        <div className="p-1 bg-green-100 rounded-full">
-                                          <ExternalLink className="w-3 h-3 text-green-600" />
+                                        <div className="p-1 bg-green-100 dark:bg-green-900 rounded-full">
+                                          <ExternalLink className="w-3 h-3 text-green-600 dark:text-green-400" />
                                         </div>
                                       </div>
                                     </div>
@@ -1109,7 +1109,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                   <div className="space-y-4">
                     <button
                       onClick={() => toggleSection('duplicatedFromThis')}
-                      className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-purple-600 transition-colors w-full"
+                      className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition-colors w-full"
                     >
                       <Link2 className="w-5 h-5" />
                       <span>Duplicated Tasks ({taskDetails.duplicated_tasks.length})</span>
@@ -1124,29 +1124,29 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                           exit={{ height: 0, opacity: 0 }}
                           className="space-y-3"
                         >
-                          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                            <p className="text-sm text-purple-700 mb-3">
+                          <div className="bg-purple-50 dark:bg-purple-950 rounded-lg p-4 border border-purple-200 dark:border-purple-700 shadow-sm">
+                            <p className="text-sm text-purple-700 dark:text-purple-300 mb-3 font-medium">
                               The following tasks were marked as duplicates of this task:
                             </p>
                             <div className="space-y-2">
                               {taskDetails.duplicated_tasks.map((dupTask) => (
                                 <div
                                   key={dupTask.id}
-                                  className="bg-white rounded-lg p-3 border border-purple-200 cursor-pointer hover:shadow-md transition-all"
+                                  className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700 cursor-pointer hover:shadow-md transition-all"
                                   onClick={() => onNavigateToTask?.(dupTask.id)}
                                 >
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                       <div className="flex items-center space-x-2 mb-1">
                                         <StatusBadge status="duplicated" size="sm" />
-                                        <span className="text-sm font-bold text-purple-700">
+                                        <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
                                           {((dupTask.similarity_score || 0) * 100).toFixed(1)}% similar
                                         </span>
                                       </div>
-                                      <p className="text-sm font-medium text-gray-800 mb-1">
+                                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
                                         {dupTask.description}
                                       </p>
-                                      <div className="flex items-center space-x-3 text-xs text-gray-500">
+                                      <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400 font-medium">
                                         <span>ID: {dupTask.id.slice(0, 8)}...</span>
                                         <span>Created {formatDistanceToNow(new Date(dupTask.created_at), { addSuffix: true })}</span>
                                         {dupTask.created_by_agent_id && (
@@ -1154,7 +1154,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                                         )}
                                       </div>
                                     </div>
-                                    <ExternalLink className="w-4 h-4 text-purple-600 ml-3" />
+                                    <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400 ml-3" />
                                   </div>
                                 </div>
                               ))}
@@ -1171,7 +1171,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                   <div className="space-y-4">
                     <button
                       onClick={() => toggleSection('relatedTickets')}
-                      className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors w-full"
+                      className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors w-full"
                     >
                       <Ticket className="w-5 h-5" />
                       <span>Related Tickets ({taskDetails.related_ticket_ids.length})</span>
@@ -1188,7 +1188,7 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                         >
                           {relatedTicketsLoading ? (
                             <div className="flex items-center justify-center py-8">
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 dark:border-blue-400"></div>
                             </div>
                           ) : relatedTickets && relatedTickets.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1202,8 +1202,8 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                               ))}
                             </div>
                           ) : (
-                            <div className="text-center py-8 text-gray-500">
-                              <p className="text-sm">No related tickets found</p>
+                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                              <p className="text-sm font-medium">No related tickets found</p>
                             </div>
                           )}
                         </motion.div>
@@ -1215,15 +1215,15 @@ ${taskDetails.child_tasks.map((t: any) => `- ${t.description} (${t.status})`).jo
                 {/* Additional Information */}
                 {(taskDetails.completion_notes || taskDetails.failure_reason) && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200">
                       {taskDetails.completion_notes ? 'Completion Notes' : 'Failure Reason'}
                     </h4>
-                    <div className={`p-3 rounded-lg ${
+                    <div className={`p-3 rounded-lg shadow-sm ${
                       taskDetails.completion_notes
-                        ? 'bg-green-50 border border-green-200'
-                        : 'bg-red-50 border border-red-200'
+                        ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-700'
+                        : 'bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-700'
                     }`}>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {taskDetails.completion_notes || taskDetails.failure_reason}
                       </p>
                     </div>

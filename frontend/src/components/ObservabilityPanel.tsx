@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import PanelSearch, { HighlightedContent } from './PanelSearch';
 import VoiceControls from './VoiceControls';
+import AgentMessageInput from './AgentMessageInput';
 import { formatDistanceToNow } from 'date-fns';
 import { Agent } from '@/types';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
@@ -37,6 +38,7 @@ interface ObservabilityPanelProps {
   onHide?: () => void;
   onClose?: () => void;
   isPaused?: boolean;
+  audioEnabled?: boolean;
 }
 
 const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
@@ -54,9 +56,11 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
   onHide,
   onClose,
   isPaused = false,
+  audioEnabled: propAudioEnabled = false,
 }) => {
   const [autoScroll, setAutoScroll] = useState(true);
   const [localPaused, setLocalPaused] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(propAudioEnabled); // Manage audio state locally
   const outputRef = useRef<HTMLPreElement>(null);
   const lastScrollPosition = useRef(0);
   const initialScrollDone = useRef(false);
@@ -83,11 +87,15 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
     }
   }, [output.output, autoScroll, isPaused, localPaused]);
 
-  // Detect and alert on errors/warnings
+  // Detect and alert on errors/warnings (only if audio is enabled)
   useEffect(() => {
-    if (output.output && output.output !== lastOutputRef.current) {
+    if (!audioEnabled || output.output && output.output !== lastOutputRef.current) {
       const newContent = output.output.substring(lastOutputRef.current.length);
       lastOutputRef.current = output.output;
+
+      if (!audioEnabled) {
+        return; // Skip audio alerts if disabled
+      }
 
       // Check for errors
       if (newContent.toUpperCase().includes('ERROR')) {
@@ -102,7 +110,7 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
         playSound('success');
       }
     }
-  }, [output.output, speak, playSound]);
+  }, [output.output, audioEnabled, speak, playSound]);
 
   // Handle scroll events
   const handleScroll = useCallback(() => {
@@ -133,11 +141,11 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
   // Get agent status color
   const getAgentStatusColor = () => {
     switch (agent.status) {
-      case 'working': return 'text-green-600 bg-green-50';
-      case 'idle': return 'text-gray-600 bg-gray-50';
-      case 'stuck': return 'text-red-600 bg-red-50';
-      case 'terminated': return 'text-gray-500 bg-gray-100';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'working': return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
+      case 'idle': return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50';
+      case 'stuck': return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+      case 'terminated': return 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50';
     }
   };
 
@@ -216,10 +224,12 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
           <pre
             ref={outputRef}
             onScroll={handleScroll}
-            className="absolute inset-0 p-4 overflow-auto font-mono text-xs text-green-400 whitespace-pre-wrap"
+            className="absolute inset-0 p-4 overflow-auto font-mono text-xs text-green-400 whitespace-pre-wrap break-words w-full"
             style={{
               lineHeight: '1.4',
-              fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+              fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere'
             }}
           >
             {output.output || 'Waiting for output...'}
@@ -258,7 +268,7 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col overflow-hidden">
       {/* Panel Header */}
       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900 rounded-t-lg">
         <div className="flex items-center space-x-2 flex-1 min-w-0">
@@ -273,27 +283,6 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
         </div>
 
         <div className="flex items-center space-x-1">
-          {/* Voice Controls */}
-          <div className="border-r border-gray-300 dark:border-gray-600 pr-1">
-            <VoiceControls
-              onCommandExecuted={(action, params) => {
-                if (action === 'readOutput') {
-                  speak(output.output.substring(0, 500));
-                } else if (action === 'readError') {
-                  const errorLine = output.output.split('\n').find((line) =>
-                    line.toUpperCase().includes('ERROR')
-                  );
-                  if (errorLine) {
-                    speak(errorLine);
-                  } else {
-                    speak('No errors found');
-                  }
-                }
-              }}
-              onError={(error) => console.error('Voice command error:', error)}
-            />
-          </div>
-
           <button
             onClick={copyToClipboard}
             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -362,10 +351,12 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
           <pre
             ref={outputRef}
             onScroll={handleScroll}
-            className="absolute inset-0 p-2 overflow-auto font-mono text-xs text-green-400 whitespace-pre-wrap"
+            className="absolute inset-0 p-2 overflow-auto font-mono text-xs text-green-400 whitespace-pre-wrap break-words w-full"
             style={{
               lineHeight: '1.3',
               fontSize: '10px',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere'
             }}
           >
             {output.output || 'No output yet...'}
@@ -389,8 +380,8 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
         )}
       </div>
 
-      {/* Panel Footer */}
-      <div className="px-3 py-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-lg flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+      {/* Panel Footer with Stats */}
+      <div className="px-3 py-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 rounded-none">
         <div className="flex space-x-3">
           <span>{lineCount} lines</span>
           <span>{dataSize}KB</span>
@@ -402,6 +393,14 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
           </div>
         )}
       </div>
+
+      {/* Message Input */}
+      <AgentMessageInput
+        agentId={agent.id}
+        agentName={agent.id.substring(0, 8)}
+        audioEnabled={audioEnabled}
+        onAudioToggle={setAudioEnabled}
+      />
     </div>
   );
 };

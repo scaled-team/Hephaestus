@@ -22,6 +22,7 @@ interface ObservabilityGridLayoutProps {
   cols: number;
   rows: number;
   globalPaused: boolean;
+  sidebarOpen?: boolean;
   onLayoutChange?: (layout: GridLayout.Layout[]) => void;
   onToggleFullscreen: (agentId: string) => void;
   onToggleAgent: (agentId: string) => void;
@@ -34,6 +35,7 @@ const ObservabilityGridLayout: React.FC<ObservabilityGridLayoutProps> = ({
   cols,
   rows,
   globalPaused,
+  sidebarOpen = true,
   onLayoutChange,
   onToggleFullscreen,
   onToggleAgent,
@@ -70,26 +72,53 @@ const ObservabilityGridLayout: React.FC<ObservabilityGridLayoutProps> = ({
     }
   }, [onLayoutChange]);
 
-  // Calculate grid dimensions
+  // Calculate grid dimensions with responsive width
+  const gridContainerRef = React.useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = React.useState(0);
+
   const containerHeight = useMemo(() => {
     // Calculate based on viewport height minus header/controls
-    return window.innerHeight - 250; // Adjust based on your header height
+    return window.innerHeight - 250; // Standard viewport height
   }, []);
 
   const rowHeight = useMemo(() => {
-    return (containerHeight - (rows - 1) * 10) / rows; // 10px gap between rows
+    // Calculate row height ensuring readable terminal text (1.6x for good balance)
+    const totalGapHeight = (rows - 1) * 16; // 16px margin between rows
+    const availableHeight = containerHeight - totalGapHeight;
+    // 1.6x height (doubled minus 20%): For 2x2: ~640px per panel | For 3x3: ~400px per panel
+    // This provides good visibility without excessive height
+    const baseRowHeight = availableHeight / rows;
+    return Math.max(baseRowHeight * 1.6, 320); // 1.6x with 320px minimum
   }, [containerHeight, rows]);
 
+  // Update grid width when container size changes
+  React.useEffect(() => {
+    const updateWidth = () => {
+      if (gridContainerRef.current) {
+        // Get parent's actual content width (after padding is applied)
+        const rect = gridContainerRef.current.getBoundingClientRect();
+        // Subtract padding (p-4 = 16px on each side = 32px total)
+        const availableWidth = rect.width - 32;
+        setContainerWidth(Math.max(availableWidth, 1));
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, [sidebarOpen]); // Re-calculate when sidebar opens/closes
+
   return (
-    <div className="h-full w-full p-4 bg-gray-50 overflow-auto">
-      <GridLayout
-        className="layout"
-        layout={layout}
-        cols={cols}
-        rowHeight={rowHeight}
-        width={window.innerWidth - 320} // Adjust for sidebar
-        margin={[16, 16]}
-        containerPadding={[16, 16]}
+    <div ref={gridContainerRef} className="h-full w-full bg-gray-50 dark:bg-gray-900 overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-auto p-4">
+        <GridLayout
+          className="layout"
+          layout={layout}
+          cols={cols}
+          rowHeight={rowHeight}
+          width={containerWidth || 1} // Use measured width, fallback to 1
+          margin={[10, 10]}
+          containerPadding={[0, 0]}
         onLayoutChange={handleLayoutChange}
         draggableHandle=".drag-handle"
         isDraggable={true}
@@ -111,17 +140,16 @@ const ObservabilityGridLayout: React.FC<ObservabilityGridLayoutProps> = ({
                 onHide={() => onToggleAgent(agentId)}
                 isPaused={globalPaused}
               />
-              {/* Drag handle positioned to avoid buttons - left side of header only */}
-              <div className="drag-handle absolute top-2 left-3 w-14 h-7 cursor-grab active:cursor-grabbing flex items-center justify-center opacity-30 hover:opacity-80 transition-all z-20 rounded hover:bg-gray-200/50" title="Drag to reposition panel">
-                <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 3C9 2.44772 8.55228 2 8 2C7.44772 2 7 2.44772 7 3V21C7 21.5523 7.44772 22 8 22C8.55228 22 9 21.5523 9 21V3Z" />
-                  <path d="M17 3C17 2.44772 16.5523 2 16 2C15.4477 2 15 2.44772 15 3V21C15 21.5523 15.4477 22 16 22C16.5523 22 17 21.5523 17 21V3Z" />
-                </svg>
-              </div>
+              {/* Drag handle - positioned at top center for better accessibility */}
+              <div
+                className="drag-handle absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1.5 cursor-grab active:cursor-grabbing opacity-0 hover:opacity-100 transition-opacity z-10 rounded-b-full bg-gray-400 dark:bg-gray-600"
+                title="Drag to reposition panel"
+              />
             </div>
           );
         })}
-      </GridLayout>
+        </GridLayout>
+      </div>
     </div>
   );
 };

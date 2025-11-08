@@ -90,155 +90,163 @@ export default function Overview() {
   const activeAgentCount = systemData?.agent_alignments?.filter((a: any) => a.agent_id).length || 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-            <Compass className="w-8 h-8 mr-3 text-blue-600 dark:text-blue-400" />
-            System Overview
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Real-time monitoring and trajectory analysis
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          {systemData?.timestamp && (
-            <Badge variant="outline" className="text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
-              Last update: {formatDistanceToNow(new Date(systemData.timestamp), { addSuffix: true })}
-            </Badge>
-          )}
-          {activeAgentCount > 0 && (
-            <Button
-              onClick={() => setShowBroadcastDialog(true)}
-              variant="outline"
-              size="sm"
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:border-gray-600"
+    <div className="h-full flex flex-col">
+      {/* Compact Header */}
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Compass className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">System Overview</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Real-time monitoring and trajectory analysis</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {systemData?.timestamp && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+                <Clock className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {formatDistanceToNow(new Date(systemData.timestamp), { addSuffix: true })}
+                </span>
+              </div>
+            )}
+            {activeAgentCount > 0 && (
+              <Button
+                onClick={() => setShowBroadcastDialog(true)}
+                variant="outline"
+                size="sm"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:border-gray-600 font-medium"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Broadcast
+              </Button>
+            )}
+            <button
+              onClick={() => refetch()}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
+              title="Refresh"
             >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Broadcast
-            </Button>
-          )}
-          <button
-            onClick={() => refetch()}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </button>
+              <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* System Health */}
-        <div className="lg:col-span-1">
-          <SystemHealthCard systemHealth={systemData?.system_health} />
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto px-6 space-y-6 bg-gray-50 dark:bg-gray-900">
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* System Health */}
+          <div className="lg:col-span-1">
+            <SystemHealthCard systemHealth={systemData?.system_health} />
+          </div>
+
+          {/* Phase Distribution */}
+          <div className="lg:col-span-1 xl:col-span-2">
+            <PhaseDistributionCard phases={systemData?.phase_distribution || []} />
+          </div>
+
+          {/* Conductor Summary - Full Width */}
+          <div className="lg:col-span-2 xl:col-span-3">
+            <ConductorSummaryCard analysis={systemData?.latest_conductor_analysis} />
+          </div>
+
+          {/* Recent Steering Events */}
+          <div className="lg:col-span-1">
+            <SteeringEventsCard events={systemData?.recent_steering_events || []} />
+          </div>
+
+          {/* Trajectory Timeline */}
+          <div className="lg:col-span-1 xl:col-span-2">
+            <TrajectoryTimeline alignments={systemData?.agent_alignments || []} />
+          </div>
         </div>
 
-        {/* Phase Distribution */}
-        <div className="lg:col-span-1 xl:col-span-2">
-          <PhaseDistributionCard phases={systemData?.phase_distribution || []} />
-        </div>
+        {/* System Metrics Graphs */}
+        {systemData?.metrics_history && systemData.metrics_history.length > 0 && (
+          <div>
+            <SystemMetricsGraphs
+              metricsHistory={systemData.metrics_history}
+              phases={systemData?.phase_distribution?.map((p: any) => p.name) || []}
+            />
+          </div>
+        )}
 
-        {/* Conductor Summary - Full Width */}
-        <div className="lg:col-span-2 xl:col-span-3">
-          <ConductorSummaryCard analysis={systemData?.latest_conductor_analysis} />
-        </div>
+        {/* Agent Alignment Details */}
+        {systemData?.agent_alignments && systemData.agent_alignments.length > 0 && (
+          <Card className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-lg font-bold dark:text-white">
+                <Bot className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+                Agent Trajectory Status
+              </CardTitle>
+              <CardDescription className="text-sm dark:text-gray-400">
+                Individual agent alignment and steering needs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {systemData.agent_alignments.map((agent: any) => (
+                  <button
+                    key={agent.agent_id}
+                    onClick={() => setSelectedAgentId(agent.agent_id)}
+                    className={cn(
+                      "border rounded-lg p-4 text-left transition-all hover:shadow-md hover:scale-[1.02]",
+                      agent.needs_steering
+                        ? "border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-750 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    )}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-mono text-sm text-gray-600 dark:text-gray-400 font-medium">{agent.agent_id.substring(0, 8)}</p>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">Click to view details</p>
+                        </div>
+                      </div>
+                      {agent.needs_steering && (
+                        <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700 flex-shrink-0 font-semibold">
+                          Needs Steering
+                        </Badge>
+                      )}
+                    </div>
 
-        {/* Recent Steering Events */}
-        <div className="lg:col-span-1">
-          <SteeringEventsCard events={systemData?.recent_steering_events || []} />
-        </div>
-
-        {/* Trajectory Timeline */}
-        <div className="lg:col-span-1 xl:col-span-2">
-          <TrajectoryTimeline alignments={systemData?.agent_alignments || []} />
-        </div>
-      </div>
-
-      {/* System Metrics Graphs */}
-      {systemData?.metrics_history && systemData.metrics_history.length > 0 && (
-        <div className="mt-6">
-          <SystemMetricsGraphs
-            metricsHistory={systemData.metrics_history}
-            phases={systemData?.phase_distribution?.map((p: any) => p.name) || []}
-          />
-        </div>
-      )}
-
-      {/* Agent Alignment Details */}
-      {systemData?.agent_alignments && systemData.agent_alignments.length > 0 && (
-        <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <CardHeader>
-            <CardTitle className="flex items-center dark:text-white">
-              <Bot className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
-              Agent Trajectory Status
-            </CardTitle>
-            <CardDescription className="dark:text-gray-400">
-              Individual agent alignment and steering needs
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {systemData.agent_alignments.map((agent: any) => (
-                <button
-                  key={agent.agent_id}
-                  onClick={() => setSelectedAgentId(agent.agent_id)}
-                  className={cn(
-                    "border rounded-lg p-4 text-left transition-all hover:shadow-lg hover:scale-105",
-                    agent.needs_steering ? "border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30" : "border-gray-200 dark:border-gray-700 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750"
-                  )}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-mono text-xs text-gray-500 dark:text-gray-400">{agent.agent_id.substring(0, 8)}</p>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">Click to view details</p>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Alignment</span>
+                        <span className={cn(
+                          "text-base font-bold",
+                          agent.alignment_score > 0.8 ? "text-green-600 dark:text-green-400" :
+                          agent.alignment_score > 0.4 ? "text-yellow-600 dark:text-yellow-400" :
+                          "text-red-600 dark:text-red-400"
+                        )}>
+                          {Math.round((agent.alignment_score || 0) * 100)}%
+                        </span>
+                      </div>
+                      <Progress
+                        value={(agent.alignment_score || 0) * 100}
+                        className={cn(
+                          "h-2.5",
+                          agent.alignment_score > 0.8 ? "[&>div]:bg-green-500 dark:[&>div]:bg-green-400" :
+                          agent.alignment_score > 0.4 ? "[&>div]:bg-yellow-500 dark:[&>div]:bg-yellow-400" :
+                          "[&>div]:bg-red-500 dark:[&>div]:bg-red-400"
+                        )}
+                      />
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Phase: <span className="text-gray-900 dark:text-white">{agent.current_phase || 'Unknown'}</span>
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                        Updated {formatDistanceToNow(new Date(agent.last_update), { addSuffix: true })}
                       </div>
                     </div>
-                    {agent.needs_steering && (
-                      <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 flex-shrink-0">
-                        Needs Steering
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Alignment</span>
-                      <span className={cn(
-                        "text-sm font-semibold",
-                        agent.alignment_score > 0.8 ? "text-green-600 dark:text-green-400" :
-                        agent.alignment_score > 0.4 ? "text-yellow-600 dark:text-yellow-400" :
-                        "text-red-600 dark:text-red-400"
-                      )}>
-                        {Math.round((agent.alignment_score || 0) * 100)}%
-                      </span>
-                    </div>
-                    <Progress
-                      value={(agent.alignment_score || 0) * 100}
-                      className={cn(
-                        "h-2",
-                        agent.alignment_score > 0.8 ? "[&>div]:bg-green-500 dark:[&>div]:bg-green-400" :
-                        agent.alignment_score > 0.4 ? "[&>div]:bg-yellow-500 dark:[&>div]:bg-yellow-400" :
-                        "[&>div]:bg-red-500 dark:[&>div]:bg-red-400"
-                      )}
-                    />
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Phase: {agent.current_phase || 'Unknown'}
-                    </div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500">
-                      Updated {formatDistanceToNow(new Date(agent.last_update), { addSuffix: true })}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Broadcast Message Dialog */}
       <BroadcastMessageDialog

@@ -23,30 +23,32 @@ const TaskRow: React.FC<{
 
   return (
     <motion.div
-      initial={isNew ? { opacity: 0, backgroundColor: '#DBEAFE' } : false}
-      animate={{ opacity: 1, backgroundColor: isNew ? '#DBEAFE' : '#FFFFFF' }}
-      transition={{ duration: 0.5, backgroundColor: { duration: 2 } }}
-      className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      initial={isNew ? { opacity: 0 } : false}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className={`border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors ${
+        isNew ? 'bg-blue-50 dark:bg-blue-950' : 'bg-white dark:bg-gray-800'
+      }`}
     >
       <div
-        className="px-6 py-4 cursor-pointer"
+        className="px-6 py-5 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center space-x-4 flex-1 min-w-0">
             <ChevronRight
-              className={`w-4 h-4 text-gray-400 dark:text-gray-600 transition-transform flex-shrink-0 ${
+              className={`w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${
                 isExpanded ? 'rotate-90' : ''
               }`}
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 min-w-0">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1 flex-1 min-w-0">
+                <p className="text-base font-medium text-gray-900 dark:text-gray-100 line-clamp-1 flex-1 min-w-0">
                   {task.description}
                 </p>
                 {task.status === 'duplicated' && task.duplicate_of_task_id && (
-                  <span className="flex items-center text-purple-600 dark:text-purple-400 text-xs whitespace-nowrap flex-shrink-0">
-                    <Copy className="w-3 h-3 mr-1" />
+                  <span className="flex items-center text-purple-600 dark:text-purple-400 text-sm font-medium whitespace-nowrap flex-shrink-0">
+                    <Copy className="w-4 h-4 mr-1.5" />
                     Duplicate of {task.duplicate_of_task_id.substring(0, 8)}
                     {task.similarity_score && (
                       <span className="ml-1 text-purple-500 dark:text-purple-300">
@@ -56,26 +58,26 @@ const TaskRow: React.FC<{
                   </span>
                 )}
                 {task.related_task_ids && task.related_task_ids.length > 0 && (
-                  <span className="flex items-center text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap flex-shrink-0">
-                    <Link2 className="w-3 h-3 mr-1" />
+                  <span className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium whitespace-nowrap flex-shrink-0">
+                    <Link2 className="w-4 h-4 mr-1.5" />
                     {task.related_task_ids.length} related
                   </span>
                 )}
               </div>
-              <div className="flex items-center mt-1 space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                <span className="flex items-center">
-                  <Clock className="w-3 h-3 mr-1" />
+              <div className="flex items-center mt-2 space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                <span className="flex items-center font-medium">
+                  <Clock className="w-4 h-4 mr-1.5" />
                   {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
                 </span>
                 {task.created_by_agent_id && (
-                  <span className="flex items-center">
-                    <User className="w-3 h-3 mr-1" />
+                  <span className="flex items-center font-medium">
+                    <User className="w-4 h-4 mr-1.5" />
                     Agent {task.created_by_agent_id.substring(0, 8)}
                   </span>
                 )}
                 {task.assigned_agent_id && (
-                  <span className="flex items-center">
-                    <Bot className="w-3 h-3 mr-1" />
+                  <span className="flex items-center font-medium">
+                    <Bot className="w-4 h-4 mr-1.5" />
                     {task.assigned_agent_id.substring(0, 8)}
                   </span>
                 )}
@@ -92,12 +94,12 @@ const TaskRow: React.FC<{
             )}
             <StatusBadge status={task.status} />
             <span
-              className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
+              className={`text-sm px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap border ${
                 task.priority === 'high'
-                  ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200'
+                  ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
                   : task.priority === 'medium'
-                  ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  ? 'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
               }`}
             >
               {task.priority}
@@ -107,10 +109,10 @@ const TaskRow: React.FC<{
                 e.stopPropagation();
                 onViewDetails?.(task.id);
               }}
-              className="px-3 py-1 bg-blue-600 dark:bg-blue-700 text-white rounded-md text-xs hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center whitespace-nowrap flex-shrink-0"
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center whitespace-nowrap flex-shrink-0 shadow-sm"
               title="View full task details"
             >
-              <FileText className="w-3 h-3 mr-1" />
+              <FileText className="w-4 h-4 mr-1.5" />
               Details
             </button>
           </div>
@@ -124,30 +126,30 @@ const TaskRow: React.FC<{
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="px-6 pb-4 overflow-hidden"
+            className="px-6 pb-5 overflow-hidden"
           >
-            <div className="pl-8 pt-2 border-t border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="pl-9 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">Task ID</p>
-                  <p className="text-gray-800 dark:text-gray-200 font-mono text-xs">{task.id}</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Task ID</p>
+                  <p className="text-sm text-gray-900 dark:text-gray-100 font-mono">{task.id}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">Completion Criteria</p>
-                  <p className="text-gray-800 dark:text-gray-200">{task.done_definition}</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Completion Criteria</p>
+                  <p className="text-base text-gray-900 dark:text-gray-100 leading-relaxed">{task.done_definition}</p>
                 </div>
                 {task.started_at && (
                   <div>
-                    <p className="text-gray-600 dark:text-gray-400 font-medium">Started At</p>
-                    <p className="text-gray-800 dark:text-gray-200">
+                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Started At</p>
+                    <p className="text-base text-gray-900 dark:text-gray-100">
                       {formatDistanceToNow(new Date(task.started_at), { addSuffix: true })}
                     </p>
                   </div>
                 )}
                 {task.completed_at && (
                   <div>
-                    <p className="text-gray-600 dark:text-gray-400 font-medium">Completed At</p>
-                    <p className="text-gray-800 dark:text-gray-200">
+                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Completed At</p>
+                    <p className="text-base text-gray-900 dark:text-gray-100">
                       {formatDistanceToNow(new Date(task.completed_at), { addSuffix: true })}
                     </p>
                   </div>
@@ -319,94 +321,103 @@ const Tasks: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Tasks</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">All system tasks and their status</p>
+    <div className="h-full flex flex-col">
+      {/* Compact Header */}
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4 mb-6">
+        <div className="flex items-center gap-3">
+          <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Tasks</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">All system tasks and their status</p>
+          </div>
+        </div>
       </div>
 
-      {/* Queue Section */}
-      <QueueSection
-        onViewTaskDetails={(taskId) => setSelectedTaskId(taskId)}
-        onRefreshTasks={refetch}
-      />
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto px-6 space-y-6 bg-gray-50 dark:bg-gray-900">
+        {/* Queue Section */}
+        <QueueSection
+          onViewTaskDetails={(taskId) => setSelectedTaskId(taskId)}
+          onRefreshTasks={refetch}
+        />
 
-      {/* Blocked Tasks Section */}
-      {blockedTasks && blockedTasks.length > 0 && (
-        <BlockedTasksView />
-      )}
+        {/* Blocked Tasks Section */}
+        {blockedTasks && blockedTasks.length > 0 && (
+          <BlockedTasksView />
+        )}
 
-      {/* New Filter Bar */}
-      <TaskFilterBar
-        tasks={tasks}
-        filters={filters}
-        onFiltersChange={setFilters}
-        filteredCount={filteredTasks.length}
-      />
+        {/* New Filter Bar */}
+        <TaskFilterBar
+          tasks={tasks}
+          filters={filters}
+          onFiltersChange={setFilters}
+          filteredCount={filteredTasks.length}
+        />
 
-      {/* Tasks List */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                Tasks
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {filteredTasks.length === tasks.length ? (
-                  `${tasks.length} total tasks`
-                ) : (
-                  `${filteredTasks.length} of ${tasks.length} tasks shown`
-                )}
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900 rounded-full">
-                <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-700 dark:text-green-200 font-medium">Live</span>
+        {/* Tasks List */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Tasks
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 font-medium">
+                  {filteredTasks.length === tasks.length ? (
+                    `${tasks.length} total tasks`
+                  ) : (
+                    `${filteredTasks.length} of ${tasks.length} tasks shown`
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-green-700 dark:text-green-300 font-semibold">Live Updates</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div>
-          {filteredTasks.length > 0 ? (
-            filteredTasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                isNew={newTaskIds.has(task.id)}
-                onViewDetails={(taskId) => setSelectedTaskId(taskId)}
-              />
-            ))
-          ) : (
-            <div className="p-12 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
-                <Search className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+          <div>
+            {filteredTasks.length > 0 ? (
+              filteredTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  isNew={newTaskIds.has(task.id)}
+                  onViewDetails={(taskId) => setSelectedTaskId(taskId)}
+                />
+              ))
+            ) : (
+              <div className="p-12 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                  <Search className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No tasks found</h3>
+                <p className="text-base text-gray-600 dark:text-gray-400 mb-4">
+                  {tasks.length === 0
+                    ? "There are no tasks in the system yet."
+                    : "Try adjusting your filters or search criteria."}
+                </p>
+                {tasks.length > 0 && (
+                  <button
+                    onClick={() => setFilters({
+                      searchText: '',
+                      status: 'all',
+                      phase: 'all',
+                      priority: 'all',
+                      assignment: 'all',
+                      dateRange: 'all',
+                    })}
+                    className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-sm"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
               </div>
-              <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">No tasks found</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {tasks.length === 0
-                  ? "There are no tasks in the system yet."
-                  : "Try adjusting your filters or search criteria."}
-              </p>
-              {tasks.length > 0 && (
-                <button
-                  onClick={() => setFilters({
-                    searchText: '',
-                    status: 'all',
-                    phase: 'all',
-                    priority: 'all',
-                    assignment: 'all',
-                    dateRange: 'all',
-                  })}
-                  className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-                >
-                  Clear All Filters
-                </button>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

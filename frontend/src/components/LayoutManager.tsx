@@ -159,11 +159,11 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
               initial={{ opacity: 0, scale: 0.9, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: -20 }}
-              className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 w-96"
+              className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 w-96"
             >
-              <div className="px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                  <Save className="w-5 h-5 mr-2 text-green-600" />
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                  <Save className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
                   Save Layout
                 </h2>
               </div>
@@ -171,7 +171,7 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
               <div className="px-6 py-4">
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="layout-name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="layout-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Layout Name
                     </label>
                     <input
@@ -180,7 +180,7 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
                       value={layoutName}
                       onChange={(e) => setLayoutName(e.target.value)}
                       placeholder="e.g., Debug View, Production Monitor"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400"
                       autoFocus
                     />
                   </div>
@@ -191,14 +191,14 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
                       type="checkbox"
                       checked={setAsDefault}
                       onChange={(e) => setSetAsDefault(e.target.checked)}
-                      className="mr-2"
+                      className="mr-2 accent-blue-500 dark:accent-blue-400"
                     />
-                    <label htmlFor="set-default" className="text-sm text-gray-700">
+                    <label htmlFor="set-default" className="text-sm text-gray-700 dark:text-gray-300">
                       Set as default layout
                     </label>
                   </div>
 
-                  <div className="bg-gray-50 rounded p-3 text-xs text-gray-600">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded p-3 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
                     <p>This layout includes:</p>
                     <ul className="mt-1 space-y-0.5">
                       <li>• {currentLayout.cols}×{currentLayout.rows} grid configuration</li>
@@ -209,21 +209,21 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+              <div className="flex justify-end space-x-3 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => {
                     setShowSaveDialog(false);
                     setLayoutName('');
                     setSetAsDefault(false);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={!layoutName.trim()}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 dark:bg-green-900/50 dark:text-green-400 rounded-lg hover:bg-green-700 dark:hover:bg-green-900/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Layout
                 </button>
@@ -249,37 +249,37 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
               initial={{ opacity: 0, scale: 0.9, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: -20 }}
-              className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 w-[500px] max-h-[600px]"
+              className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 w-[500px] max-h-[600px]"
             >
-              <div className="px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                  <FolderOpen className="w-5 h-5 mr-2 text-blue-600" />
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                  <FolderOpen className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                   Load Layout
                 </h2>
               </div>
 
               <div className="px-6 py-4 max-h-[400px] overflow-y-auto">
                 {savedLayouts.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No saved layouts yet</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">No saved layouts yet</p>
                 ) : (
                   <div className="space-y-2">
                     {savedLayouts.map((layout) => (
                       <div
                         key={layout.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600"
                       >
                         <div className="flex-1">
                           <div className="flex items-center">
-                            <h3 className="font-medium text-gray-800">
+                            <h3 className="font-medium text-gray-800 dark:text-white">
                               {layout.name}
                             </h3>
                             {layout.isDefault && (
-                              <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">
+                              <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded">
                                 Default
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {layout.cols}×{layout.rows} grid • {layout.visibleAgents.length} agents •
                             Created {new Date(layout.createdAt).toLocaleDateString()}
                           </div>
@@ -291,7 +291,7 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
                               onLoadLayout(layout);
                               setShowLoadDialog(false);
                             }}
-                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition-colors"
+                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded transition-colors"
                           >
                             Load
                           </button>
@@ -300,8 +300,8 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
                             onClick={() => handleSetDefault(layout.id)}
                             className={`p-1 rounded transition-colors ${
                               layout.isDefault
-                                ? 'text-yellow-600 bg-yellow-100'
-                                : 'text-gray-400 hover:text-yellow-600 hover:bg-yellow-100'
+                                ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30'
+                                : 'text-gray-400 dark:text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
                             }`}
                             title={layout.isDefault ? 'Default layout' : 'Set as default'}
                           >
@@ -310,7 +310,7 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
 
                           <button
                             onClick={() => handleDelete(layout.id)}
-                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-100 rounded transition-colors"
+                            className="p-1 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
                             title="Delete layout"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -322,10 +322,10 @@ const LayoutManager: React.FC<LayoutManagerProps> = ({
                 )}
               </div>
 
-              <div className="flex justify-end px-6 py-4 bg-gray-50 rounded-b-lg">
+              <div className="flex justify-end px-6 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setShowLoadDialog(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
                 >
                   Close
                 </button>

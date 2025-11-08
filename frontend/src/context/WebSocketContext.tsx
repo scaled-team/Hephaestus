@@ -7,6 +7,7 @@ interface WebSocketContextType {
   lastMessage: WebSocketMessage | null;
   lastUpdate: Date;
   subscribe: (event: string, callback: (data: any) => void) => () => void;
+  sendMessage: (type: string, data: any) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -41,6 +42,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       subscribersRef.current.get(event)?.delete(callback);
     };
   }, []);
+
+  const sendMessage = useCallback((type: string, data: any) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({ type, ...data });
+      ws.send(message);
+    } else {
+      toast.error('WebSocket not connected', { duration: 2000 });
+    }
+  }, [ws]);
 
   useEffect(() => {
     const connectWebSocket = () => {
@@ -151,7 +161,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   }, []);
 
   return (
-    <WebSocketContext.Provider value={{ isConnected, lastMessage, lastUpdate, subscribe }}>
+    <WebSocketContext.Provider value={{ isConnected, lastMessage, lastUpdate, subscribe, sendMessage }}>
       {children}
     </WebSocketContext.Provider>
   );

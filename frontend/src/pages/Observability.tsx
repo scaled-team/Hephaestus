@@ -107,7 +107,7 @@ const Observability: React.FC = () => {
   useEffect(() => {
     if (agents.length === 0 || layoutInitialized) return;
 
-    // Auto-populate with first 4 active agents (simplified - no persistence for now)
+    // Auto-populate with first 4 active agents (2x2 grid - optimal for readability)
     const workingAgents = agents.filter(a => a.status === 'working');
     const initialAgents = workingAgents.length > 0 ? workingAgents.slice(0, 4) : agents.slice(0, 4);
     const panels: PanelLayout[] = initialAgents.map((agent, index) => ({
@@ -426,6 +426,7 @@ const Observability: React.FC = () => {
               cols={gridLayout.cols}
               rows={gridLayout.rows}
               globalPaused={globalPaused}
+              sidebarOpen={sidebarOpen}
               onToggleFullscreen={setFullscreenAgent}
               onToggleAgent={toggleAgentVisibility}
             />

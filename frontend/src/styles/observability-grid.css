@@ -96,3 +96,20 @@
   cursor: s-resize;
   margin-left: -10px;
 }
+
+/* Grid layout container */
+.layout {
+  width: 100% !important;
+}
+
+/* Grid items - let react-grid-layout calculate width */
+.grid-item {
+  box-sizing: border-box !important;
+}
+
+/* Ensure panel content fills the grid item */
+.grid-item > div {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
