@@ -84,8 +84,8 @@ class Conductor:
             llm_provider = get_llm_provider()
             if hasattr(llm_provider, 'get_model_for_component'):
                 model_name = llm_provider.get_model_for_component('conductor_analysis')
-        except:
-            pass
+        except ImportError as e:
+            logger.debug(f"Failed to get LLM provider for conductor: {e}")
 
         logger.info(f"Conductor analyzing system with {len(guardian_summaries)} agents using {model_name}")
 

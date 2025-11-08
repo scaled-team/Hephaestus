@@ -103,19 +103,19 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="px-6 py-4 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Bot className="w-6 h-6 text-blue-600" />
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-800">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
                     Agent Monitor
                   </h3>
-                  <p className="text-sm text-gray-600 font-mono">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">
                     {agent?.id || agentId}
                   </p>
                 </div>
@@ -141,7 +141,7 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
 
                 <button
                   onClick={() => agent && copyToClipboard(agent.id)}
-                  className="p-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   title="Copy agent ID"
                 >
                   <Copy className="w-4 h-4" />
@@ -149,7 +149,7 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
 
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+                  className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -159,26 +159,26 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
             {/* Agent Info */}
             {agent && (
               <div className="mt-3 grid grid-cols-4 gap-4 text-sm">
-                <div className="text-gray-600">
-                  <span className="block text-xs text-gray-500">CLI Type</span>
+                <div className="text-gray-600 dark:text-gray-300">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">CLI Type</span>
                   <span className="font-medium">{agent.cli_type}</span>
                 </div>
 
-                <div className="text-gray-600">
-                  <span className="block text-xs text-gray-500">Health</span>
-                  <span className={`font-medium ${agent.health_check_failures > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <div className="text-gray-600 dark:text-gray-300">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">Health</span>
+                  <span className={`font-medium ${agent.health_check_failures > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                     {agent.health_check_failures > 0 ? `${agent.health_check_failures} failures` : 'Healthy'}
                   </span>
                 </div>
 
-                <div className="text-gray-600">
-                  <span className="block text-xs text-gray-500">Created</span>
+                <div className="text-gray-600 dark:text-gray-300">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">Created</span>
                   <span className="font-medium">{formatDistanceToNow(new Date(agent.created_at), { addSuffix: true })}</span>
                 </div>
 
                 {agent.last_activity && (
-                  <div className="text-gray-600">
-                    <span className="block text-xs text-gray-500">Last Active</span>
+                  <div className="text-gray-600 dark:text-gray-300">
+                    <span className="block text-xs text-gray-500 dark:text-gray-400">Last Active</span>
                     <span className="font-medium">{formatDistanceToNow(new Date(agent.last_activity), { addSuffix: true })}</span>
                   </div>
                 )}
@@ -200,7 +200,7 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
                 <div className="space-y-4">
                   <button
                     onClick={() => toggleSection('task')}
-                    className="flex items-center space-x-2 text-lg font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                    className="flex items-center space-x-2 text-lg font-semibold text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     <Activity className="w-5 h-5" />
                     <span>Active assignment</span>
@@ -223,7 +223,7 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
                             compact={false}
                           />
                         ) : (
-                          <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500 text-sm">
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-center text-gray-500 dark:text-gray-400 text-sm">
                             No active assignment
                           </div>
                         )}
@@ -236,7 +236,7 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
                 <div className="space-y-4">
                   <button
                     onClick={() => toggleSection('details')}
-                    className="flex items-center space-x-2 text-lg font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                    className="flex items-center space-x-2 text-lg font-semibold text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     <Terminal className="w-5 h-5" />
                     <span>TMUX SESSION</span>
@@ -250,8 +250,8 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                       >
-                        <div className="p-4 bg-gray-900 rounded-lg">
-                          <code className="text-green-400 text-sm font-mono">
+                        <div className="p-4 bg-gray-900 dark:bg-gray-950 rounded-lg">
+                          <code className="text-green-400 dark:text-green-300 text-sm font-mono">
                             {agent.tmux_session_name || `agent_${agent.id.substring(0, 8)}`}
                           </code>
                         </div>
@@ -264,7 +264,7 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
                 <div className="space-y-4">
                   <button
                     onClick={() => toggleSection('message')}
-                    className="flex items-center space-x-2 text-lg font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                    className="flex items-center space-x-2 text-lg font-semibold text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     <MessageSquare className="w-5 h-5" />
                     <span>Send Message to Agent</span>
@@ -283,7 +283,7 @@ const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
                           value={messageText}
                           onChange={(e) => setMessageText(e.target.value)}
                           placeholder="Type your message here..."
-                          className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                           rows={4}
                         />
                         <button

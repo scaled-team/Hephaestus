@@ -354,6 +354,27 @@ class AgentManager:
         Returns:
             Created tmux session
         """
+        # Ensure tmux server is running by checking for sessions
+        # If no sessions exist, create a temporary one to start the server
+        try:
+            session_count = len(self.tmux_server.sessions)
+            if session_count == 0:
+                logger.info("No tmux sessions found - starting tmux server with keepalive session")
+                # Create keepalive session to start the server
+                self.tmux_server.new_session(
+                    session_name="hephaestus_keepalive",
+                    window_name="keepalive",
+                    attach=False,
+                    start_directory="/app"
+                )
+                # Send keepalive command
+                keepalive = self.tmux_server.sessions[0]
+                keepalive.attached_window.attached_pane.send_keys("tail -f /dev/null", enter=True)
+                logger.info("Tmux server started with keepalive session")
+        except Exception as e:
+            logger.warning(f"Error checking/starting tmux server: {e}")
+            # Continue anyway - tmux will auto-start on new_session
+
         # Check if session already exists
         if self.tmux_server.has_session(session_name):
             logger.warning(f"Session {session_name} already exists, killing it")
@@ -976,8 +997,8 @@ REMEMBER:
 
                         if tmux_session:
                             tmux_session.kill_session()
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Error killing tmux session: {e}")
 
             # Prepare environment variables for GLM if needed
             env_vars = None

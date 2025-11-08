@@ -197,14 +197,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
   if (statsLoading || ticketsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
       </div>
     );
   }
 
   if (!stats || !tickets) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
         <AlertCircle className="w-12 h-12 mb-4" />
         <p>No data available</p>
       </div>
@@ -213,7 +213,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
 
   if (!stats.board_config) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
         <AlertCircle className="w-12 h-12 mb-4" />
         <p>Kanban board not configured for this workflow</p>
         <p className="text-sm mt-2">This workflow does not have ticket tracking enabled</p>
@@ -230,29 +230,29 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
   return (
     <>
       {/* Filter Bar */}
-      <div className="bg-white rounded-lg border shadow-sm p-4 mb-4 space-y-3">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-4 mb-4 space-y-3">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tickets..."
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
           />
         </div>
 
         {/* Filter Dropdowns */}
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-600 font-medium">Filters:</span>
+          <span className="text-gray-600 dark:text-gray-400 font-medium">Filters:</span>
 
           {/* Type Filter */}
           <div className="relative">
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="appearance-none bg-white border rounded-lg px-4 py-2 pr-10 cursor-pointer hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="appearance-none bg-white dark:bg-gray-700 dark:text-white border dark:border-gray-600 rounded-lg px-4 py-2 pr-10 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
             >
               <option value="all">All Types</option>
               {uniqueTypes.map((type) => (
@@ -261,7 +261,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
           </div>
 
           {/* Priority Filter */}
@@ -269,7 +269,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
             <select
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
-              className="appearance-none bg-white border rounded-lg px-4 py-2 pr-10 cursor-pointer hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="appearance-none bg-white dark:bg-gray-700 dark:text-white border dark:border-gray-600 rounded-lg px-4 py-2 pr-10 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
             >
               <option value="all">All Priorities</option>
               {uniquePriorities.map((priority) => (
@@ -278,7 +278,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
           </div>
 
           {/* Agent Filter */}
@@ -286,7 +286,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
             <select
               value={selectedAgent}
               onChange={(e) => setSelectedAgent(e.target.value)}
-              className="appearance-none bg-white border rounded-lg px-4 py-2 pr-10 cursor-pointer hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="appearance-none bg-white dark:bg-gray-700 dark:text-white border dark:border-gray-600 rounded-lg px-4 py-2 pr-10 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
             >
               <option value="all">All Agents</option>
               {uniqueAgents.map((agent) => (
@@ -295,12 +295,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
           </div>
 
           {/* Active Filters Count */}
           {(searchQuery || selectedType !== 'all' || selectedPriority !== 'all' || selectedAgent !== 'all') && (
-            <span className="text-blue-600 font-medium">
+            <span className="text-blue-600 dark:text-blue-400 font-medium">
               ({filteredTickets.length} of {tickets.length} tickets)
             </span>
           )}
@@ -322,11 +322,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
             >
               {/* Column Header */}
               <div
-                className="sticky top-0 z-10 bg-white rounded-t-lg border-2 border-b-0 p-3 mb-2"
+                className="sticky top-0 z-10 bg-white dark:bg-gray-800 rounded-t-lg border-2 border-b-0 p-3 mb-2"
                 style={{ borderColor: column.color }}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-semibold text-gray-900">{column.name}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{column.name}</h3>
                   <span
                     className="text-sm font-medium px-2 py-0.5 rounded"
                     style={{
@@ -342,13 +342,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
               {/* Column Content */}
               <div
                 className={cn(
-                  'min-h-[500px] rounded-b-lg border-2 border-t-0 p-3 bg-gray-50 transition-colors',
-                  draggedTicketId && 'border-dashed bg-blue-50'
+                  'min-h-[500px] rounded-b-lg border-2 border-t-0 p-3 bg-gray-50 dark:bg-gray-900 transition-colors',
+                  draggedTicketId && 'border-dashed bg-blue-50 dark:bg-blue-950'
                 )}
                 style={{ borderColor: draggedTicketId ? '#3b82f6' : column.color }}
               >
                 {columnTickets.length === 0 ? (
-                  <div className="text-center text-gray-400 text-sm mt-8">
+                  <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-8">
                     No tickets
                   </div>
                 ) : (

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { WebSocketMessage } from '@/types';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 interface WebSocketContextType {
   isConnected: boolean;

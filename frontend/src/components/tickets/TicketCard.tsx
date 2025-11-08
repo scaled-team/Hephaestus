@@ -35,15 +35,15 @@ const getTicketTypeIcon = (type: string) => {
 const getPriorityColor = (priority: string) => {
   switch (priority) {
     case 'critical':
-      return 'bg-red-100 text-red-800 border-red-200';
+      return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700';
     case 'high':
-      return 'bg-orange-100 text-orange-800 border-orange-200';
+      return 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-700';
     case 'medium':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700';
     case 'low':
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600';
   }
 };
 
@@ -69,10 +69,10 @@ const TicketCard: React.FC<TicketCardProps> = ({
     <Tooltip content={formatTooltipContent(ticket)}>
       <div
         className={cn(
-          'bg-white rounded-lg border border-gray-200 p-3 mb-2 shadow-sm hover:shadow-md transition-all cursor-pointer group',
-          isPendingReview && 'border-l-4 border-l-orange-500 bg-orange-50 ring-2 ring-orange-200',
-          ticket.is_blocked && 'border-l-4 border-l-red-500 bg-red-50',
-          ticket.is_resolved && 'bg-green-50 border-l-4 border-l-green-500'
+          'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 mb-2 shadow-sm hover:shadow-md transition-all cursor-pointer group',
+          isPendingReview && 'border-l-4 border-l-orange-500 bg-orange-50 dark:bg-orange-900 dark:bg-opacity-20 ring-2 ring-orange-200 dark:ring-orange-700',
+          ticket.is_blocked && 'border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900 dark:bg-opacity-20',
+          ticket.is_resolved && 'bg-green-50 dark:bg-green-900 dark:bg-opacity-20 border-l-4 border-l-green-500'
         )}
         onClick={onClick}
         draggable={draggable && !ticket.is_blocked}
@@ -82,7 +82,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
-          <span className="text-xs font-mono text-gray-500">
+          <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
             {ticket.id.split('-')[1]?.substring(0, 8) || ticket.id.substring(0, 8)}
           </span>
           {getTicketTypeIcon(ticket.ticket_type)}
@@ -108,13 +108,13 @@ const TicketCard: React.FC<TicketCardProps> = ({
 
       {/* Pending Review Banner */}
       {isPendingReview && (
-        <div className="mb-2 px-2 py-1 bg-orange-100 border border-orange-300 rounded text-xs font-semibold text-orange-800 text-center">
+        <div className="mb-2 px-2 py-1 bg-orange-100 dark:bg-orange-900 border border-orange-300 dark:border-orange-700 rounded text-xs font-semibold text-orange-800 dark:text-orange-200 text-center">
           ⏳ Needs Human Review
         </div>
       )}
 
       {/* Title */}
-      <h3 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+      <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
         {ticket.title}
       </h3>
 
@@ -131,9 +131,9 @@ const TicketCard: React.FC<TicketCardProps> = ({
                 }
               }}
               className={cn(
-                'text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full transition-all',
+                'text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full transition-all',
                 onTagClick &&
-                  'cursor-pointer hover:bg-blue-100 hover:text-blue-700 hover:ring-1 hover:ring-blue-400'
+                  'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-200 hover:ring-1 hover:ring-blue-400 dark:hover:ring-blue-600'
               )}
               title={onTagClick ? `Filter by tag: ${tag}` : tag}
             >
@@ -141,7 +141,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
             </span>
           ))}
           {ticket.tags.length > 3 && (
-            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+            <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full">
               +{ticket.tags.length - 3}
             </span>
           )}
@@ -149,7 +149,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
         {/* Priority */}
         <span
           className={cn(
@@ -161,7 +161,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
         </span>
 
         {/* Agent & Metadata */}
-        <div className="flex items-center space-x-3 text-xs text-gray-500">
+        <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
           {ticket.assigned_agent_id && (
             <div className="flex items-center" title={ticket.assigned_agent_id}>
               <User className="w-3 h-3 mr-1" />

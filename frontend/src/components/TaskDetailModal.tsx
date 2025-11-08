@@ -183,10 +183,9 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      // Could add toast notification here
-      console.log(`Copied ${label} to clipboard`);
+      toast.success(`${label} copied to clipboard!`);
     } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
+      toast.error('Failed to copy to clipboard');
     }
   };
 

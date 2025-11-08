@@ -258,13 +258,13 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
       {/* Panel Header */}
-      <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between bg-gray-50 rounded-t-lg">
+      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900 rounded-t-lg">
         <div className="flex items-center space-x-2 flex-1 min-w-0">
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getStatusColor()}`} />
-          <Bot className="w-4 h-4 text-gray-500 flex-shrink-0" />
-          <span className="text-sm font-medium text-gray-800 truncate">
+          <Bot className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+          <span className="text-sm font-medium text-gray-800 dark:text-white truncate">
             {agent.id.substring(0, 8)}
           </span>
           <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${getAgentStatusColor()}`}>
@@ -274,7 +274,7 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
 
         <div className="flex items-center space-x-1">
           {/* Voice Controls */}
-          <div className="border-r border-gray-300 pr-1">
+          <div className="border-r border-gray-300 dark:border-gray-600 pr-1">
             <VoiceControls
               onCommandExecuted={(action, params) => {
                 if (action === 'readOutput') {
@@ -296,16 +296,16 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
 
           <button
             onClick={copyToClipboard}
-            className="p-1 rounded hover:bg-gray-200 transition-colors"
+            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             title="Copy"
           >
-            <Copy className="w-3 h-3 text-gray-600" />
+            <Copy className="w-3 h-3 text-gray-600 dark:text-gray-400" />
           </button>
 
           <button
             onClick={() => setLocalPaused(!localPaused)}
-            className={`p-1 rounded hover:bg-gray-200 transition-colors ${
-              isPausedEffective ? 'text-green-600' : 'text-yellow-600'
+            className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ${
+              isPausedEffective ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
             }`}
             title={isPausedEffective ? 'Resume' : 'Pause'}
           >
@@ -315,20 +315,20 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
           {onToggleFullscreen && (
             <button
               onClick={onToggleFullscreen}
-              className="p-1 rounded hover:bg-gray-200 transition-colors"
+              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               title="Fullscreen"
             >
-              <Maximize2 className="w-3 h-3 text-gray-600" />
+              <Maximize2 className="w-3 h-3 text-gray-600 dark:text-gray-400" />
             </button>
           )}
 
           {onHide && (
             <button
               onClick={onHide}
-              className="p-1 rounded hover:bg-gray-200 transition-colors"
+              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               title="Hide"
             >
-              <EyeOff className="w-3 h-3 text-gray-600" />
+              <EyeOff className="w-3 h-3 text-gray-600 dark:text-gray-400" />
             </button>
           )}
         </div>
@@ -336,7 +336,7 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
 
       {/* Task Info */}
       {agent.current_task_id && (
-        <div className="px-3 py-1 bg-blue-50 border-b border-blue-100 text-xs text-blue-700">
+        <div className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 border-b border-blue-100 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-400">
           <FileText className="w-3 h-3 inline mr-1" />
           Task: {agent.current_task_id.substring(0, 12)}
         </div>
@@ -344,8 +344,8 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
 
       {/* Error State */}
       {output.error && (
-        <div className="px-3 py-2 bg-red-50 border-b border-red-100 flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-red-600 text-xs">
+        <div className="px-3 py-2 bg-red-50 dark:bg-red-900/30 border-b border-red-100 dark:border-red-800 flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 text-xs">
             <AlertCircle className="w-3 h-3" />
             <span>{output.error}</span>
           </div>
@@ -390,7 +390,7 @@ const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({
       </div>
 
       {/* Panel Footer */}
-      <div className="px-3 py-1 border-t border-gray-200 bg-gray-50 rounded-b-lg flex justify-between items-center text-xs text-gray-500">
+      <div className="px-3 py-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-lg flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
         <div className="flex space-x-3">
           <span>{lineCount} lines</span>
           <span>{dataSize}KB</span>

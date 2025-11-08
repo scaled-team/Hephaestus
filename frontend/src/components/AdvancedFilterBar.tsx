@@ -87,13 +87,13 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
     filters.hideIdle;
 
   return (
-    <div className="bg-white border-b">
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       {/* Main Filter Bar */}
       <div className="px-4 py-2 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Filters:</span>
+            <Filter className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
           </div>
 
           {/* Status Filters */}
@@ -107,8 +107,8 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
                   onClick={() => handleStatusToggle(option.value)}
                   className={`px-3 py-1 text-xs rounded-full transition-all flex items-center space-x-1 ${
                     isActive
-                      ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-300'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-2 ring-blue-300 dark:ring-blue-700'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <Icon className="w-3 h-3" />
@@ -123,7 +123,7 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
             <select
               value={filters.activityThreshold || ''}
               onChange={(e) => handleActivityChange(e.target.value ? parseInt(e.target.value) : null)}
-              className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
             >
               <option value="">All activity</option>
               {activityOptions.map(option => (
@@ -143,14 +143,14 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
                 onChange={handleHideIdleToggle}
                 className="mr-2"
               />
-              <span className="text-xs text-gray-600">Hide idle agents</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">Hide idle agents</span>
             </label>
           </div>
         </div>
 
         <div className="flex items-center space-x-3">
           {/* Agent Count */}
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-gray-600 dark:text-gray-400">
             Showing <span className="font-medium">{agentCount.filtered}</span> of{' '}
             <span className="font-medium">{agentCount.total}</span> agents
           </div>
@@ -159,7 +159,7 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="px-3 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors flex items-center"
+              className="px-3 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded transition-colors flex items-center"
             >
               <X className="w-3 h-3 mr-1" />
               Clear Filters
@@ -169,7 +169,7 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
           {/* Advanced Toggle */}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 rounded transition-colors"
+            className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
           >
             {showAdvanced ? 'Hide' : 'Show'} Advanced
           </button>
@@ -184,12 +184,12 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="border-t bg-gray-50 px-4 py-3 overflow-hidden"
+            className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 overflow-hidden"
           >
             <div className="flex items-center space-x-4">
               {/* Regex Pattern Filter */}
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Output Pattern (Regex)
                 </label>
                 <input
@@ -197,28 +197,28 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
                   value={filters.searchPattern}
                   onChange={(e) => handlePatternChange(e.target.value)}
                   placeholder="e.g., ERROR.*failed|WARN.*timeout"
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
                 />
               </div>
 
               {/* Quick Patterns */}
               <div className="flex items-center space-x-2">
-                <span className="text-xs text-gray-600">Quick:</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Quick:</span>
                 <button
                   onClick={() => handlePatternChange('ERROR')}
-                  className="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors"
+                  className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded transition-colors"
                 >
                   Errors
                 </button>
                 <button
                   onClick={() => handlePatternChange('WARN|WARNING')}
-                  className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded transition-colors"
+                  className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 rounded transition-colors"
                 >
                   Warnings
                 </button>
                 <button
                   onClick={() => handlePatternChange('SUCCESS|COMPLETE')}
-                  className="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors"
+                  className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 rounded transition-colors"
                 >
                   Success
                 </button>
@@ -227,25 +227,25 @@ const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
 
             {/* Filter Summary */}
             {hasActiveFilters && (
-              <div className="mt-3 flex items-center space-x-2 text-xs text-gray-600">
+              <div className="mt-3 flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
                 <span>Active filters:</span>
                 {filters.status.length > 0 && (
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
                     Status: {filters.status.join(', ')}
                   </span>
                 )}
                 {filters.activityThreshold && (
-                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                  <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">
                     Active in last {filters.activityThreshold}m
                   </span>
                 )}
                 {filters.searchPattern && (
-                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
+                  <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded">
                     Pattern: {filters.searchPattern}
                   </span>
                 )}
                 {filters.hideIdle && (
-                  <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                  <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
                     Hiding idle
                   </span>
                 )}

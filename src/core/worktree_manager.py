@@ -1001,7 +1001,8 @@ class WorktreeManager:
                                 insertions = int(part.strip().split()[0])
                             elif 'deletion' in part:
                                 deletions = int(part.strip().split()[0])
-            except:
+            except (ValueError, IndexError, AttributeError) as e:
+                logger.warning(f"Failed to parse diff stats: {e}")
                 insertions = 0
                 deletions = 0
 
@@ -1366,8 +1367,8 @@ class WorktreeManager:
         try:
             # Try git worktree remove first
             self.main_repo.git.worktree("remove", worktree_path, force=True)
-        except:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to remove git worktree {worktree_path}: {e}")
 
         # Force remove directory
         path = Path(worktree_path)
@@ -1389,6 +1390,6 @@ class WorktreeManager:
                 filepath = os.path.join(dirpath, filename)
                 try:
                     total_size += os.path.getsize(filepath)
-                except:
-                    pass
+                except (OSError, IOError) as e:
+                    logger.debug(f"Failed to get size of {filepath}: {e}")
         return total_size // (1024 * 1024)  # Convert to MB

@@ -242,7 +242,8 @@ class RAGSystem:
             else:
                 return 0.3
 
-        except:
+        except Exception as e:
+            logger.debug(f"Error calculating memory relevance: {e}")
             return 0.5
 
     def _get_type_relevance_score(

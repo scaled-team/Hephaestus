@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, LayoutGrid, Search, BarChart3, Loader2, Network } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import KanbanBoard from '@/components/tickets/KanbanBoard';
 import TicketSearch from '@/components/tickets/TicketSearch';
 import TicketStats from '@/components/tickets/TicketStats';
@@ -43,7 +44,7 @@ const Tickets: React.FC = () => {
 
   const handleNewTicket = () => {
     // TODO: Open create ticket modal
-    console.log('Create new ticket');
+    toast('Feature coming soon!', { icon: '🔜' });
   };
 
   const handleNavigateToSearchTab = (tag: string) => {
@@ -64,7 +65,7 @@ const Tickets: React.FC = () => {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading workflow...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading workflow...</p>
         </div>
       </div>
     );
@@ -74,7 +75,7 @@ const Tickets: React.FC = () => {
   if (!selectedWorkflowId) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-center text-gray-500">
+        <div className="text-center text-gray-500 dark:text-gray-400">
           <p className="text-lg font-semibold mb-2">No workflow found</p>
           <p className="text-sm">Please create a workflow first</p>
         </div>
@@ -84,50 +85,42 @@ const Tickets: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ticket Tracking</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage and track tickets across your workflow
-          </p>
-        </div>
+      {/* Compressed Header with Tabs and Actions */}
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
+        <div className="flex items-center justify-between">
+          <nav className="flex space-x-8">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`
+                  flex items-center px-1 py-3 border-b-2 font-medium text-sm transition-colors
+                  ${
+                    activeTab === id
+                      ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                  }
+                `}
+              >
+                <Icon className="w-5 h-5 mr-2" />
+                {label}
+              </button>
+            ))}
+          </nav>
 
-        <div className="flex items-center space-x-3">
-          {/* Pending Review Indicator */}
-          <PendingReviewIndicator />
+          <div className="flex items-center space-x-3 pb-3">
+            {/* Pending Review Indicator */}
+            <PendingReviewIndicator />
 
-          <button
-            onClick={handleNewTicket}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            New Ticket
-          </button>
-        </div>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="flex space-x-8">
-          {tabs.map(({ id, label, icon: Icon }) => (
             <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`
-                flex items-center px-1 py-4 border-b-2 font-medium text-sm transition-colors
-                ${
-                  activeTab === id
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }
-              `}
+              onClick={handleNewTicket}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
-              <Icon className="w-5 h-5 mr-2" />
-              {label}
+              <Plus className="w-5 h-5 mr-2" />
+              New Ticket
             </button>
-          ))}
-        </nav>
+          </div>
+        </div>
       </div>
 
       {/* Tab Content */}

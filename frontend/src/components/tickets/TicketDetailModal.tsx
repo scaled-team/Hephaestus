@@ -313,7 +313,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
           onClick={onClose}
         >
-          <div className="bg-white rounded-lg p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
           </div>
         </motion.div>
@@ -670,8 +670,8 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                   </div>
 
                   {/* Agents Section */}
-                  <div className="bg-gray-50 rounded-lg p-4 border">
-                    <h3 className="font-semibold text-gray-900 mb-3">Agents</h3>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border dark:border-gray-600">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Agents</h3>
                     <div className="space-y-3 text-sm">
                       {/* Collect all unique agents involved */}
                       {(() => {
@@ -704,8 +704,8 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                         });
 
                         return Array.from(agentRoles.entries()).map(([agentId, roles]) => (
-                          <div key={agentId} className="pb-2 border-b last:border-b-0 last:pb-0">
-                            <div className="text-gray-600 text-xs mb-1">
+                          <div key={agentId} className="pb-2 border-b dark:border-gray-600 last:border-b-0 last:pb-0">
+                            <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">
                               {roles.join(', ')}
                             </div>
                             <ClickableAgentId
@@ -720,10 +720,10 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
 
                   {/* Blocking Section */}
                   {ticket.blocked_by_ticket_ids && ticket.blocked_by_ticket_ids.length > 0 && (
-                    <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                    <div className="bg-red-50 dark:bg-red-900 dark:bg-opacity-20 rounded-lg p-4 border border-red-200 dark:border-red-700">
                       <button
                         onClick={() => toggleSection('blocking')}
-                        className="flex items-center justify-between w-full font-semibold text-gray-900 mb-3"
+                        className="flex items-center justify-between w-full font-semibold text-gray-900 dark:text-white mb-3"
                       >
                         <span className="flex items-center">
                           <Lock className="w-4 h-4 mr-2 text-red-600" />
@@ -751,10 +751,10 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
 
                   {/* Blocks Section */}
                   {ticket.blocks_ticket_ids && ticket.blocks_ticket_ids.length > 0 && (
-                    <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                    <div className="bg-orange-50 dark:bg-orange-900 dark:bg-opacity-20 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
                       <button
                         onClick={() => toggleSection('blocks')}
-                        className="flex items-center justify-between w-full font-semibold text-gray-900 mb-3"
+                        className="flex items-center justify-between w-full font-semibold text-gray-900 dark:text-white mb-3"
                       >
                         <span className="flex items-center">
                           <AlertCircle className="w-4 h-4 mr-2 text-orange-600" />
@@ -782,10 +782,10 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
 
                   {/* Commits Section */}
                   {commits.length > 0 && (
-                    <div className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border dark:border-gray-600">
                       <button
                         onClick={() => toggleSection('commits')}
-                        className="flex items-center justify-between w-full font-semibold text-gray-900 mb-3"
+                        className="flex items-center justify-between w-full font-semibold text-gray-900 dark:text-white mb-3"
                       >
                         <span className="flex items-center">
                           <GitCommit className="w-4 h-4 mr-2" />
@@ -802,19 +802,19 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                           {commits.map((commit) => (
                             <div
                               key={commit.id}
-                              className="p-3 bg-white rounded border cursor-pointer hover:bg-gray-50 transition-colors"
+                              className="p-3 bg-white dark:bg-gray-600 rounded border dark:border-gray-500 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
                               onClick={() => setSelectedCommitSha(commit.commit_sha)}
                             >
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-mono text-blue-600">
+                                <span className="text-xs font-mono text-blue-600 dark:text-blue-400">
                                   {commit.commit_sha.substring(0, 7)}
                                 </span>
-                                <ExternalLink className="w-3 h-3 text-gray-400" />
+                                <ExternalLink className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                               </div>
-                              <p className="text-sm text-gray-700 line-clamp-2">
+                              <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-2">
                                 {commit.commit_message}
                               </p>
-                              <div className="flex items-center space-x-3 mt-2 text-xs text-gray-500">
+                              <div className="flex items-center space-x-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
                                 <span>+{commit.insertions} -{commit.deletions}</span>
                                 <span>{commit.files_changed} files</span>
                               </div>
@@ -827,10 +827,10 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
 
                   {/* Related Tickets */}
                   {ticket.related_ticket_ids && ticket.related_ticket_ids.length > 0 && (
-                    <div className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border dark:border-gray-600">
                       <button
                         onClick={() => toggleSection('related')}
-                        className="flex items-center justify-between w-full font-semibold text-gray-900 mb-3"
+                        className="flex items-center justify-between w-full font-semibold text-gray-900 dark:text-white mb-3"
                       >
                         <span>Related Tickets</span>
                         {expandedSections.related ? (
@@ -844,7 +844,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                           {ticket.related_ticket_ids.map((id) => (
                             <div
                               key={id}
-                              className="p-2 bg-white rounded border text-sm font-mono cursor-pointer hover:bg-gray-50"
+                              className="p-2 bg-white dark:bg-gray-600 rounded border dark:border-gray-500 text-sm font-mono cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-500 dark:text-gray-300"
                             >
                               {id}
                             </div>
@@ -856,8 +856,8 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
 
                   {/* Tags */}
                   {ticket.tags && ticket.tags.length > 0 && (
-                    <div className="bg-gray-50 rounded-lg p-4 border">
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border dark:border-gray-600">
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                         <Tag className="w-4 h-4 mr-2" />
                         Tags
                       </h3>
@@ -872,8 +872,8 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                               }
                             }}
                             className={cn(
-                              "px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full transition-colors",
-                              onNavigateToSearchTab && "cursor-pointer hover:bg-blue-200 hover:text-blue-800"
+                              "px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-xs rounded-full transition-colors",
+                              onNavigateToSearchTab && "cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800 hover:text-blue-800 dark:hover:text-blue-100"
                             )}
                             disabled={!onNavigateToSearchTab}
                             title={onNavigateToSearchTab ? `Search for tickets with tag: ${tag}` : undefined}

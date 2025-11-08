@@ -114,8 +114,8 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className={`px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors ${
-          isVisible ? 'bg-blue-50 hover:bg-blue-100' : ''
+        className={`px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors ${
+          isVisible ? 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40' : ''
         }`}
         onClick={() => onToggleAgent(agent.id)}
       >
@@ -135,11 +135,11 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
               )}
             </button>
 
-            <Bot className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <Bot className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-800 truncate">
+                <span className="text-sm font-medium text-gray-800 dark:text-white truncate">
                   {agent.id.substring(0, 8)}
                 </span>
                 <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${statusConfig.color}`}>
@@ -186,10 +186,10 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-4 py-3 border-b bg-gray-50">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-800">Agent List</h3>
-          <span className="text-xs text-gray-500">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Agent List</h3>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
             {visibleAgents.size} / {agents.length} selected
           </span>
         </div>
@@ -198,13 +198,13 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
         <div className="flex items-center space-x-2">
           <button
             onClick={onSelectAll}
-            className="flex-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+            className="flex-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
           >
             Select All
           </button>
           <button
             onClick={onDeselectAll}
-            className="flex-1 px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            className="flex-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             Deselect All
           </button>
@@ -220,28 +220,28 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
           const isExpanded = expandedGroups.has(status);
 
           return (
-            <div key={status} className="border-b">
+            <div key={status} className="border-b border-gray-200 dark:border-gray-700">
               {/* Group Header */}
               <div
-                className="px-3 py-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors flex items-center justify-between"
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors flex items-center justify-between"
                 onClick={() => toggleGroup(status)}
               >
                 <div className="flex items-center space-x-2">
                   {isExpanded ? (
-                    <ChevronDown className="w-3 h-3 text-gray-500" />
+                    <ChevronDown className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                   ) : (
-                    <ChevronRight className="w-3 h-3 text-gray-500" />
+                    <ChevronRight className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                   )}
                   {statusConfig.icon}
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {statusConfig.label}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     ({statusAgents.length})
                   </span>
                 </div>
 
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {statusAgents.filter(a => visibleAgents.has(a.id)).length} visible
                 </div>
               </div>
@@ -260,7 +260,7 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t bg-gray-50 text-xs text-gray-600">
+      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs text-gray-600 dark:text-gray-400">
         <div className="space-y-1">
           <div className="flex justify-between">
             <span>Working:</span>
@@ -272,7 +272,7 @@ const ObservabilitySidebar: React.FC<ObservabilitySidebarProps> = ({
           </div>
           <div className="flex justify-between">
             <span>Stuck:</span>
-            <span className="font-medium text-red-600">{agentsByStatus.stuck.length}</span>
+            <span className="font-medium text-red-600 dark:text-red-400">{agentsByStatus.stuck.length}</span>
           </div>
         </div>
       </div>

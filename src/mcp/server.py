@@ -629,7 +629,8 @@ class ServerState:
         for websocket in self.active_websockets:
             try:
                 await websocket.send_json(message)
-            except:
+            except (ConnectionError, RuntimeError) as e:
+                logger.debug(f"WebSocket send error: {e}")
                 disconnected.append(websocket)
 
         # Remove disconnected clients
@@ -679,6 +680,35 @@ async def startup_event():
     """Initialize server on startup."""
     logger.info("Starting Hephaestus MCP Server...")
     await server_state.initialize()
+
+    # Create tmux keepalive session to prevent server shutdown
+    # This ensures tmux server stays running even when all agent sessions are terminated
+    try:
+        import libtmux
+        tmux_server = libtmux.Server()
+
+        # Check if keepalive session already exists
+        keepalive_name = "hephaestus_keepalive"
+        if not tmux_server.has_session(keepalive_name):
+            logger.info("Creating tmux keepalive session to prevent server shutdown...")
+            # Create a persistent session with a long-running process
+            # Using 'tail -f /dev/null' which runs forever and uses minimal resources
+            tmux_server.new_session(
+                session_name=keepalive_name,
+                window_name="keepalive",
+                attach=False,
+                start_directory="/app"
+            )
+            # Send the keepalive command
+            session = tmux_server.sessions[0]
+            pane = session.attached_window.attached_pane
+            pane.send_keys("tail -f /dev/null", enter=True)
+            logger.info(f"✅ Tmux keepalive session '{keepalive_name}' created successfully")
+        else:
+            logger.info(f"Tmux keepalive session '{keepalive_name}' already exists")
+    except Exception as e:
+        logger.warning(f"Failed to create tmux keepalive session (non-fatal): {e}")
+        # This is non-fatal - tmux will start when first agent is created
 
     # Add frontend API routes
     api_router = create_frontend_routes(server_state.db_manager, server_state.agent_manager, server_state.phase_manager)
@@ -1225,11 +1255,32 @@ async def background_queue_processor():
 
     This ensures that queued tasks (especially newly unblocked ones)
     don't get stuck waiting for another event to trigger queue processing.
+
+    Also handles pending tasks after system restart - automatically queues
+    them so they can be picked up by agents.
     """
     logger.info("Background queue processor started")
 
     while not server_state.shutdown_event.is_set():
         try:
+            # RECOVERY: Check for pending tasks (e.g., after system restart)
+            # and queue them so they can be processed
+            session = server_state.db_manager.get_session()
+            try:
+                from src.core.database import Task
+                pending_tasks = session.query(Task).filter(
+                    Task.status == "pending"
+                ).all()
+
+                if pending_tasks:
+                    logger.info(f"[BACKGROUND_QUEUE] Found {len(pending_tasks)} pending task(s) - queuing for processing...")
+                    for task in pending_tasks:
+                        # Queue the task (will be enriched and assigned agent)
+                        server_state.queue_service.queue_task(task.id)
+                        logger.info(f"[BACKGROUND_QUEUE] Queued pending task {task.id}")
+            finally:
+                session.close()
+
             # Check if there are any queued tasks
             queue_status = server_state.queue_service.get_queue_status()
             queued_count = queue_status.get("queued_tasks_count", 0)
@@ -3121,7 +3172,7 @@ async def get_ticket_stats_endpoint(
             seven_days_ago = datetime.utcnow() - timedelta(days=7)
             velocity_last_7_days = session.query(func.count(Ticket.id)).filter(
                 Ticket.workflow_id == workflow_id,
-                Ticket.is_resolved == True,
+                Ticket.is_resolved.is_(True),
                 Ticket.resolved_at >= seven_days_ago
             ).scalar()
 
@@ -3934,6 +3985,33 @@ async def cancel_queued_task_endpoint(
         logger.error(f"Failed to cancel queued task: {e}")
         import traceback
         logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/restart_agent")
+async def restart_agent_endpoint(
+    agent_id: str = Body(..., embed=True),
+    reason: str = Body("Manual restart", embed=True),
+):
+    """Restart an agent by recreating its tmux session.
+
+    This is used by the monitoring service to restart agents with missing tmux sessions.
+    The agent will be restarted in the server container where the API can access it.
+
+    Args:
+        agent_id: ID of the agent to restart
+        reason: Reason for restart (for logging)
+
+    Returns:
+        Success message
+    """
+    logger.info(f"API restart request for agent {agent_id}: {reason}")
+
+    try:
+        await server_state.agent_manager.restart_agent(agent_id, reason)
+        return {"status": "success", "message": f"Agent {agent_id} restarted successfully"}
+    except Exception as e:
+        logger.error(f"Failed to restart agent {agent_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

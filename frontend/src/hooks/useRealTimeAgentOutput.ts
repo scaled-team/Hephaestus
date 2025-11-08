@@ -70,7 +70,7 @@ export const useRealTimeAgentOutput = (
     } catch (error) {
       if (!mountedRef.current) return;
 
-      console.warn(`Failed to fetch agent output for ${agentId}:`, error);
+      // Error handled silently - retrying automatically
       retryCountRef.current++;
 
       setData(prev => ({

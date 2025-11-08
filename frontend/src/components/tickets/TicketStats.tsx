@@ -37,15 +37,15 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
       </div>
     );
   }
 
   if (error || !stats) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-        <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+        <AlertCircle className="w-12 h-12 mb-4 text-red-500 dark:text-red-400" />
         <p>Failed to load statistics</p>
       </div>
     );
@@ -78,81 +78,81 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
     <div className="space-y-6">
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg border shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Tickets</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total_tickets}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Tickets</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total_tickets}</p>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Ticket className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+              <Ticket className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
+          <div className="flex items-center justify-center">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Resolved</p>
-              <p className="text-3xl font-bold text-green-600">{stats.resolved_count}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Resolved</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.resolved_count}</p>
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
 
         <div className={cn(
-          "bg-white rounded-lg border shadow-sm p-6",
-          stats.blocked_count > 0 && "border-red-200 bg-red-50"
+          "bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6",
+          stats.blocked_count > 0 && "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950"
         )}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Blocked</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Blocked</p>
               <p className={cn(
                 "text-3xl font-bold",
-                stats.blocked_count > 0 ? "text-red-600" : "text-gray-900"
+                stats.blocked_count > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-white"
               )}>
                 {stats.blocked_count}
               </p>
             </div>
             <div className={cn(
               "w-12 h-12 rounded-lg flex items-center justify-center",
-              stats.blocked_count > 0 ? "bg-red-200" : "bg-gray-100"
+              stats.blocked_count > 0 ? "bg-red-200 dark:bg-red-900" : "bg-gray-100 dark:bg-gray-700"
             )}>
               <Lock className={cn(
                 "w-6 h-6",
-                stats.blocked_count > 0 ? "text-red-600" : "text-gray-400"
+                stats.blocked_count > 0 ? "text-red-600 dark:text-red-400" : "text-gray-400 dark:text-gray-500"
               )} />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">7-Day Velocity</p>
-              <p className="text-3xl font-bold text-purple-600">{stats.velocity_last_7_days}</p>
-              <p className="text-xs text-gray-500 mt-1">tickets completed</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">7-Day Velocity</p>
+              <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.velocity_last_7_days}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">tickets completed</p>
             </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
+            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Today's Activity */}
-      <div className="bg-white rounded-lg border shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Activity</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Today's Activity</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-            <p className="text-sm text-green-700 mb-1">Created Today</p>
-            <p className="text-2xl font-bold text-green-600">{stats.created_today}</p>
+          <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+            <p className="text-sm text-green-700 dark:text-green-300 mb-1">Created Today</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.created_today}</p>
           </div>
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-700 mb-1">Completed Today</p>
-            <p className="text-2xl font-bold text-blue-600">{stats.completed_today}</p>
+          <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">Completed Today</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.completed_today}</p>
           </div>
         </div>
       </div>
@@ -160,8 +160,8 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tickets by Status */}
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Tickets by Status</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tickets by Status</h3>
           {statusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={statusData}>
@@ -177,15 +177,15 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
+            <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500">
               No data
             </div>
           )}
         </div>
 
         {/* Tickets by Type */}
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Tickets by Type</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tickets by Type</h3>
           {typeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -207,15 +207,15 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
+            <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500">
               No data
             </div>
           )}
         </div>
 
         {/* Tickets by Priority */}
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Tickets by Priority</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tickets by Priority</h3>
           {priorityData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={priorityData} layout="vertical">
@@ -231,15 +231,15 @@ const TicketStats: React.FC<TicketStatsProps> = ({ workflowId }) => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
+            <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500">
               No data
             </div>
           )}
         </div>
 
         {/* Agent Workload */}
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Agent Workload (Top 10)</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Agent Workload (Top 10)</h3>
           {agentData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={agentData} layout="vertical">

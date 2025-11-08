@@ -151,20 +151,20 @@ class QueueService:
             Task.id != new_task.id,
             or_(
                 # Boosted tasks are always ahead (unless new task is also boosted)
-                and_(Task.priority_boosted == True, new_task.priority_boosted == False),
+                and_(Task.priority_boosted.is_(True), new_task.priority_boosted.isnot(True)),
                 # Among non-boosted or both boosted: higher priority is ahead
                 and_(
                     or_(
-                        and_(Task.priority_boosted == True, new_task.priority_boosted == True),
-                        and_(Task.priority_boosted == False, new_task.priority_boosted == False),
+                        and_(Task.priority_boosted.is_(True), new_task.priority_boosted.is_(True)),
+                        and_(Task.priority_boosted.isnot(True), new_task.priority_boosted.isnot(True)),
                     ),
                     priority_order > new_priority_value
                 ),
                 # Same priority level and boost status: earlier queued_at is ahead
                 and_(
                     or_(
-                        and_(Task.priority_boosted == True, new_task.priority_boosted == True),
-                        and_(Task.priority_boosted == False, new_task.priority_boosted == False),
+                        and_(Task.priority_boosted.is_(True), new_task.priority_boosted.is_(True)),
+                        and_(Task.priority_boosted.isnot(True), new_task.priority_boosted.isnot(True)),
                     ),
                     priority_order == new_priority_value,
                     Task.queued_at < new_task.queued_at

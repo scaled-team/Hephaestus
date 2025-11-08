@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { WebSocketProvider } from '@/context/WebSocketContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import Layout from '@/components/Layout';
 import Dashboard from '@/pages/Dashboard';
 import Overview from '@/pages/Overview';
@@ -27,9 +28,10 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
-        <BrowserRouter>
-          <Routes>
+      <ThemeProvider>
+        <WebSocketProvider>
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="overview" element={<Overview />} />
@@ -42,19 +44,41 @@ function App() {
               <Route path="results" element={<Results />} />
               <Route path="tickets" element={<Tickets />} />
             </Route>
-          </Routes>
-        </BrowserRouter>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#333',
-              color: '#fff',
-            },
-          }}
-        />
-      </WebSocketProvider>
+            </Routes>
+          </BrowserRouter>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))',
+                border: '1px solid hsl(var(--border))',
+              },
+              success: {
+                style: {
+                  background: 'hsl(142 70% 45%)',
+                  color: '#fff',
+                },
+                iconTheme: {
+                  primary: '#fff',
+                  secondary: 'hsl(142 70% 45%)',
+                },
+              },
+              error: {
+                style: {
+                  background: 'hsl(0 84% 60%)',
+                  color: '#fff',
+                },
+                iconTheme: {
+                  primary: '#fff',
+                  secondary: 'hsl(0 84% 60%)',
+                },
+              },
+            }}
+          />
+        </WebSocketProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

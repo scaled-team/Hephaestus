@@ -100,9 +100,9 @@ class VectorStoreManager:
                         ),
                     )
                     logger.info(f"Created collection '{full_name}': {config['description']}")
-                except:
+                except Exception as e:
                     # Collection likely already exists
-                    logger.debug(f"Collection '{full_name}' initialization handled")
+                    logger.debug(f"Collection '{full_name}' initialization handled: {e}")
 
     async def store_memory(
         self,

@@ -911,11 +911,29 @@ class MonitoringLoop:
         """
         logger.info(f"Handling missing tmux session for agent {agent.id}")
 
-        # Use the restart agent functionality which will recreate the tmux session
-        await self.agent_manager.restart_agent(
-            agent.id,
-            f"Tmux session {agent.tmux_session_name} was missing, recreating"
-        )
+        # Call the server API to restart the agent
+        # This ensures the agent is created in the server container where the API can access it
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"http://hephaestus-server:8000/api/restart_agent",
+                    json={
+                        "agent_id": agent.id,
+                        "reason": f"Tmux session {agent.tmux_session_name} was missing, recreating"
+                    },
+                    timeout=30.0
+                )
+                response.raise_for_status()
+                logger.info(f"Successfully restarted agent {agent.id} via API")
+        except Exception as e:
+            logger.error(f"Failed to restart agent {agent.id} via API: {e}")
+            # Fallback to direct restart (will create in monitor container, but better than nothing)
+            logger.warning(f"Falling back to direct restart for agent {agent.id}")
+            await self.agent_manager.restart_agent(
+                agent.id,
+                f"Tmux session {agent.tmux_session_name} was missing, recreating (fallback)"
+            )
 
     async def _check_phase_progression(self):
         """Check workflow phases for progression needs."""
