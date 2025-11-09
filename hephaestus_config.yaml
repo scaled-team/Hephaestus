@@ -63,6 +63,7 @@ agents:
   default_cli_tool: opencode
   cli_model: anthropic/claude-haiku-4-5
   tmux_session_prefix: agent
+  tmux_socket_path: /tmp/tmux-shared/default
   health_check_interval: 60
   max_health_failures: 3
   termination_delay: 5
@@ -72,11 +73,13 @@ vector_store:
   embedding_dimension: 3072
 monitoring:
   enabled: true
-  interval_seconds: 60
+  interval_seconds: 30  # Check every 30 seconds (was 1800 = 30 minutes!)
   log_level: INFO
   log_format: json
-  stuck_agent_threshold: 300
-  guardian_min_agent_age_seconds: 60
+  stuck_agent_threshold: 180  # Consider stuck after 3 minutes (was 5 minutes)
+  guardian_min_agent_age_seconds: 30  # Analyze agents after 30 seconds (was 60)
+  long_running_agent_seconds: 7200  # Nudge agents that run longer than 2 hours without finishing
+  cleanup_interval_minutes: 2  # Run zombie cleanup every 2 minutes
 mcp:
   auth_required: false
   session_timeout: 3600
@@ -90,8 +93,8 @@ task_deduplication:
   batch_size: 100
 diagnostic_agent:
   enabled: true
-  cooldown_seconds: 60
-  min_stuck_time_seconds: 60
+  cooldown_seconds: 60  # Reduced from 1800s (30 min) to 60s (1 min)
+  min_stuck_time_seconds: 300
   max_agents_to_analyze: 15
   max_conductor_analyses: 5
   max_tasks_per_run: 5

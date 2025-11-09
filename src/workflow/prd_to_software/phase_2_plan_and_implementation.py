@@ -33,7 +33,8 @@ Generic for any component type.""",
         "ALL TESTS PASSING (comprehensive testing completed - unit + manual verification)",
         "Test execution instructions documented in run_instructions/[component]_test_instructions.md",
         "Design decisions saved to memory",
-        "Ticket moved from 'backlog' to 'building-done' status",
+        "✅ Ticket status updated to 'building' when starting Phase 2 work (via MCP update_ticket_status)",
+        "✅ Ticket status updated to 'building-done' when implementation complete (via MCP update_ticket_status)",
         "ONE Phase 3 validation task created with ticket ID and test instructions reference",
     ],
     working_directory=".",
@@ -147,6 +148,16 @@ Infrastructure tickets are SETUP ONLY - absolutely NO features or business logic
 **1. PORT 8000 IS RESERVED - NEVER USE IT!**
 - Port 8000 is used by Hephaestus MCP server and MUST remain open
 - If your project needs a backend server, use a DIFFERENT port (8002, 3000, 5000, etc.)
+
+**2. 🚫 NEVER RUN DEV SERVERS OR LONG-RUNNING PROCESSES! 🚫**
+- ❌ DO NOT run `npm run dev`, `npm start`, `python manage.py runserver`, or any dev server
+- ❌ DO NOT run any long-running processes that block your terminal
+- ❌ DO NOT start servers to "verify they work" - this will HANG your agent!
+- ✅ DO verify builds work: `npm run build`, `npm run type-check`, `npm run lint`
+- ✅ DO run tests: `npm test`, `pytest`, etc. (tests should exit when done)
+- ✅ DO check that server CAN start by verifying config files exist, not by running it
+- **WHY**: Dev servers never exit and will block your agent from completing the task
+- **INSTEAD**: Document in test instructions how Phase 3 should verify the server works
 - ❌ WRONG: Backend runs on port 8000
 - ✅ CORRECT: Backend runs on port 8002 (or any port except 8000)
 
@@ -212,19 +223,25 @@ Before proceeding, ask yourself:
 
 ---
 
-STEP 0B: UPDATE TICKET STATUS
+STEP 0B: UPDATE TICKET STATUS TO "building"
 
 **After reading your ticket, move it from "backlog" to "building" to show work has started.**
 
 ```python
 # Move ticket from "backlog" to "building" status
-mcp__hephaestus__change_ticket_status({
+# 🎯 This updates the Kanban board so the team knows you're actively working on this
+mcp__hephaestus__update_ticket_status({
     "ticket_id": ticket_id,
     "agent_id": "[YOUR ACTUAL AGENT ID]",
     "new_status": "building",
-    "comment": "Starting plan & implementation. Creating design specification then implementing code per ticket scope. Ticket moved from 'backlog' to 'building'."
+    "comment": "Phase 2: Starting plan & implementation. Creating design specification then implementing code per ticket scope."
 })
 ```
+
+✅ **After this call:**
+- Kanban board updates to show ticket in the "building" column
+- Team knows you're actively working on this component
+- Real-time progress visibility for all team members
 
 STEP 0C: DETECT IF THIS IS A REOPENED TASK (BUG FIX)
 
@@ -1183,19 +1200,27 @@ existing_tasks = mcp__hephaestus__get_tasks({
 #   - Proceed to STEP 19 (create the Phase 3 task)
 ```
 
-STEP 18: MOVE TICKET TO BUILDING-DONE STATUS
+STEP 18: UPDATE TICKET STATUS TO "building-done"
 
 **Design + implementation + testing complete! Move ticket to "building-done" to show this phase is finished.**
 **Phase 3 will move it from "building-done" to "validating" when they start.**
 
 ```python
-mcp__hephaestus__change_ticket_status({
+# Update ticket status to "building-done"
+# 🎯 This signals to the team that implementation is complete and ready for validation
+mcp__hephaestus__update_ticket_status({
     "ticket_id": "[your ticket ID]",
     "agent_id": "[YOUR ACTUAL AGENT ID]",
     "new_status": "building-done",
-    "comment": "Design + implementation + testing complete! Design at design/[component]_design.md, code at src/component/. ALL TESTS PASSING (see Phase 2 Testing Summary). Moving to 'building-done'. Ready for Phase 3 validation."
+    "comment": "Phase 2: Design + implementation + testing complete! Design at design/[component]_design.md, code at src/component/. ALL TESTS PASSING. Ready for Phase 3 validation."
 })
 ```
+
+✅ **After this call:**
+- Kanban board updates to show ticket in the "building-done" column
+- Team knows implementation is complete and ready for validation
+- Phase 3 validator will begin their work
+- Real-time progress visibility updated
 
 STEP 19: CREATE PHASE 3 VALIDATION TASK (DO NOT CREATE NEW TICKET!)
 

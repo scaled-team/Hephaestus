@@ -834,7 +834,14 @@ class DatabaseManager:
             poolclass=StaticPool,
             echo=False,
         )
-        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        # expire_on_commit=False prevents cached objects from being expired after commit
+        # This helps with session isolation but requires manual expire_all() for fresh data
+        self.SessionLocal = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self.engine,
+            expire_on_commit=False
+        )
 
     def create_tables(self):
         """Create all database tables."""

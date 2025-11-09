@@ -8,6 +8,9 @@ import { useWebSocket } from '@/context/WebSocketContext';
 import { formatDistanceToNow } from 'date-fns';
 import QueueStatusWidget from '@/components/QueueStatusWidget';
 import BlockedTasksView from '@/components/BlockedTasksView';
+import { cn } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
+import { OVERVIEW_CARD, OVERVIEW_SURFACE } from '@/components/overview/styles';
 
 const StatCard: React.FC<{
   title: string;
@@ -20,7 +23,10 @@ const StatCard: React.FC<{
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-lg dark:shadow-gray-900/50 p-6 border border-transparent dark:border-gray-700"
+      className={cn(
+        OVERVIEW_CARD,
+        "p-6 border border-transparent dark:border-white/5 shadow-lg shadow-gray-200/40 dark:shadow-black/40"
+      )}
     >
       <div className="flex items-center justify-between">
         <div>
@@ -55,11 +61,13 @@ const ActivityItem: React.FC<{ activity: any; isNew?: boolean }> = ({ activity, 
     <motion.div
       initial={isNew ? { opacity: 0, x: -20 } : false}
       animate={{ opacity: 1, x: 0 }}
-      className={`flex items-center p-3 transition-colors ${
+      className={cn(
+        OVERVIEW_SURFACE,
+        "flex items-center p-3 transition-colors",
         isNew
-          ? 'bg-blue-50 dark:bg-blue-900/20'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-      }`}
+          ? "border-blue-200 dark:border-blue-900 bg-blue-50/80 dark:bg-blue-900/20"
+          : "hover:border-blue-200/60 dark:hover:border-blue-800/40"
+      )}
     >
       <div className="flex-1">
         <p className="text-sm text-gray-800 dark:text-gray-200">{activity.message}</p>
@@ -157,7 +165,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-900 dark:text-gray-100">
       <div>
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Real-time system overview</p>
@@ -214,30 +222,32 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-lg dark:shadow-gray-900/50 border border-transparent dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <Card className={cn(OVERVIEW_CARD, "p-0")}>
+        <div className="px-6 py-4 border-b border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur flex items-center justify-between rounded-t-lg">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Recent Activity</h2>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-1" />
             Live Updates
           </div>
         </div>
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+        <CardContent className="p-4">
           {recentActivities.length > 0 ? (
-            recentActivities.map((activity, index) => (
-              <ActivityItem
-                key={activity.id}
-                activity={activity}
-                isNew={index === 0}
-              />
-            ))
+            <div className="space-y-3">
+              {recentActivities.map((activity, index) => (
+                <ActivityItem
+                  key={activity.id}
+                  activity={activity}
+                  isNew={index === 0}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+            <div className={cn(OVERVIEW_SURFACE, "p-6 text-center text-gray-500 dark:text-gray-400")}>
               No recent activity
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -53,6 +53,15 @@ RUN npm install -g opencode-ai
 # Copy application code
 COPY . .
 
+# ───────────────────────────────────────────────────────────────────────────
+# Frontend Build Stage - Integrated into main image
+# Builds the React/Vite frontend for serving alongside backend
+# ───────────────────────────────────────────────────────────────────────────
+WORKDIR /app/frontend
+RUN npm ci
+RUN npm run build
+WORKDIR /app
+
 # Create directories for data and logs
 # These directories MUST be mounted in docker-compose.yml for persistence
 RUN mkdir -p \
@@ -63,7 +72,8 @@ RUN mkdir -p \
     /app/scripts
 
 # Expose MCP server port (communicates with agents and external clients)
-EXPOSE 8000
+# and Frontend dev server port
+EXPOSE 8000 5173
 
 # Default command (can be overridden by docker-compose.yml)
 CMD ["python", "run_server.py"]

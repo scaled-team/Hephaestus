@@ -86,7 +86,7 @@ export const resetVoiceSettings = (): VoiceSettings => {
  * React Hook for voice settings
  */
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface VoiceStore {
   settings: VoiceSettings;
@@ -98,7 +98,7 @@ export const useVoiceStore = create<VoiceStore>()(
   persist(
     (set) => ({
       settings: DEFAULT_SETTINGS,
-      updateSettings: (partial) =>
+      updateSettings: (partial: Partial<VoiceSettings>) =>
         set((state) => ({
           settings: { ...state.settings, ...partial },
         })),
@@ -109,18 +109,7 @@ export const useVoiceStore = create<VoiceStore>()(
     }),
     {
       name: 'voice-settings',
-      storage: {
-        getItem: (key) => {
-          const item = localStorage.getItem(key);
-          return item ? JSON.parse(item) : null;
-        },
-        setItem: (key, value) => {
-          localStorage.setItem(key, JSON.stringify(value));
-        },
-        removeItem: (key) => {
-          localStorage.removeItem(key);
-        },
-      },
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

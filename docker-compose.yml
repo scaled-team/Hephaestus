@@ -94,14 +94,20 @@ services:
       # ┌─ SYSTEM MOUNTS ─────────────────────────────────────────────────────
       # Docker socket for tmux session management (read-write for container mgmt)
       - /var/run/docker.sock:/var/run/docker.sock
+      # SHARED TMUX SOCKET - allows monitor container to access agent tmux sessions
+      - tmux-socket:/tmp/tmux-shared:rw       # ✅ Shared tmux socket directory
       # └─────────────────────────────────────────────────────────────────────
     environment:
+      # Tmux shared socket configuration
+      - TMUX_TMPDIR=/tmp/tmux-shared
+
       - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - LLM_MODEL=${LLM_MODEL:-claude-haiku-4.5-20251001}
+      - OPENCODE_MODEL=${OPENCODE_MODEL:-claude-haiku-4.5-20251001}
       - DATABASE_PATH=/app/data/hephaestus.db
       - QDRANT_URL=http://qdrant:6333
       - MCP_HOST=0.0.0.0
@@ -119,75 +125,76 @@ services:
   #
   # Same volume mount restrictions apply - see hephaestus-server above.
   # ───────────────────────────────────────────────────────────────────────────
-  hephaestus-monitor:
-    build: .
-    container_name: hephaestus-monitor
-    command: python run_monitor.py
+  # ───────────────────────────────────────────────────────────────────────────
+  # Hephaestus App (Frontend + Monitor Combined)
+  # ───────────────────────────────────────────────────────────────────────────
+  # Single container running both:
+  # - Frontend development server (port 5173) - admin UI
+  # - Monitor process (Python) - continuous agent monitoring & control
+  #
+  # Benefits:
+  # ✅ Both share same tmux sessions (agent terminals visible in UI)
+  # ✅ Frontend UI can display live agent outputs
+  # ✅ Monitor can control agents, UI can observe
+  # ✅ Simplified architecture (3 containers instead of 4)
+  # ───────────────────────────────────────────────────────────────────────────
+  hephaestus-app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: hephaestus-app
+    ports:
+      - "5173:5173"
     volumes:
-      # Data persistence mounts (same as server, consolidated in ./data/)
-      - ./data:/app/data                      # ✅ Writable - Monitoring data
+      # Data persistence (for monitor logs, docs, etc)
+      - ./data:/app/data                      # ✅ Writable - All persistent data
       - ./data/logs:/app/logs                 # ✅ Writable - Monitoring logs
-      - ./data/docs:/app/docs                 # ✅ Writable - Status reports
+      - ./data/docs:/app/docs                 # ✅ Writable - Reports
 
-      # Project workspace (in ./data/)
+      # Project workspace
       - ./data/projects:/app/projects         # ✅ Writable - Project state
-      - ./data/worktrees:/tmp/hephaestus_worktrees  # ✅ Writable - Agent git worktrees
+      - ./data/worktrees:/tmp/hephaestus_worktrees  # ✅ Writable - Agent worktrees
 
-      # Source code
-      - ./src:/app/src                # ✅ Writable - Code modifications
-      - ./scripts:/app/scripts        # ✅ Writable - Monitoring scripts
+      # Source code for monitor
+      - ./src:/app/src                        # ✅ Writable - Monitor code
+      - ./scripts:/app/scripts                # ✅ Writable - Monitor scripts
+      - ./run_monitor.py:/app/run_monitor.py  # 🔒 Read-only
 
-      # Configuration files (read-only)
+      # Frontend development (hot reload)
+      - ./frontend/src:/app/frontend/src      # ✅ Hot reload - Source code
+      - ./frontend/public:/app/frontend/public  # ✅ Assets
+
+      # Configuration (read-only)
       - ./hephaestus_config.yaml:/app/hephaestus_config.yaml  # 🔒 Read-only
-      - ./opencode.json:/app/opencode.json                    # 🔒 Read-only
-      - ./opencode.json:/root/.config/opencode/opencode.json  # 🔒 Read-only
       - ./.env:/app/.env                                      # 🔒 Read-only
 
-      # Entry point scripts (read-only)
-      - ./run_server.py:/app/run_server.py                    # 🔒 Read-only
-      - ./run_monitor.py:/app/run_monitor.py                  # 🔒 Read-only
-      - ./run_prd_workflow.py:/app/run_prd_workflow.py        # 🔒 Read-only
-
-      # Docker socket
+      # Docker socket for tmux management
       - /var/run/docker.sock:/var/run/docker.sock
+      # SHARED TMUX SOCKET - allows monitor to access agent tmux sessions from server
+      - tmux-socket:/tmp/tmux-shared:rw       # ✅ Shared tmux socket directory
     environment:
+      # Tmux shared socket configuration
+      - TMUX_TMPDIR=/tmp/tmux-shared
+
+      # Backend API URLs
+      - BACKEND_URL=http://hephaestus-server:8000
+      - BACKEND_WS_URL=ws://hephaestus-server:8000
+      - NODE_ENV=development
+
+      # Monitor configuration
       - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - LLM_MODEL=${LLM_MODEL:-claude-haiku-4.5-20251001}
+      - OPENCODE_MODEL=${OPENCODE_MODEL:-claude-haiku-4.5-20251001}
       - DATABASE_PATH=/app/data/hephaestus.db
       - QDRANT_URL=http://qdrant:6333
-      - MONITORING_INTERVAL_SECONDS=${MONITORING_INTERVAL_SECONDS:-60}
+      - MONITORING_INTERVAL_SECONDS=${MONITORING_INTERVAL_SECONDS:-30}
+      - PYTHONUNBUFFERED=1
     depends_on:
       - qdrant
-      - hephaestus-server
-    restart: unless-stopped
-
-  # Frontend Development Server
-  frontend:
-    build: ./frontend
-    container_name: hephaestus-frontend
-    ports:
-      - "5173:5173"
-    volumes:
-      # Development source code mounts for hot reload
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
-      - ./frontend/vite.config.ts:/app/vite.config.ts
-      - ./frontend/tsconfig.json:/app/tsconfig.json
-      - ./frontend/tailwind.config.js:/app/tailwind.config.js
-      - ./frontend/postcss.config.js:/app/postcss.config.js
-      # node_modules volume for persistence (prevents reinstall on restart)
-      - frontend_node_modules:/app/node_modules
-    environment:
-      # Backend URLs for Docker networking
-      - BACKEND_URL=http://hephaestus-server:8000
-      - BACKEND_WS_URL=ws://hephaestus-server:8000
-      - NODE_ENV=development
-    depends_on:
       - hephaestus-server
     restart: unless-stopped
     healthcheck:
@@ -199,4 +206,4 @@ services:
 
 volumes:
   qdrant_data:
-  frontend_node_modules:
+  tmux-socket:  # Shared tmux socket directory for cross-container session access

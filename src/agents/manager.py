@@ -3,12 +3,17 @@
 import uuid
 import asyncio
 import logging
+import subprocess
+import traceback
+import time
+import re
+from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import libtmux
 
-from src.core.database import DatabaseManager, Agent, Task, AgentLog, BoardConfig, get_db
-from src.interfaces import get_cli_agent, LLMProviderInterface
+from src.core.database import DatabaseManager, Agent, Task, AgentLog, BoardConfig, AgentWorktree, get_db
+from src.interfaces import get_cli_agent, LLMProviderInterface, CLIAgentInterface
 from src.core.simple_config import get_config
 from src.core.worktree_manager import WorktreeManager
 
@@ -30,10 +35,197 @@ class AgentManager:
         self.llm_provider = llm_provider
         self.phase_manager = phase_manager
         self.config = get_config()
-        self.tmux_server = libtmux.Server()
+
+        # Use shared tmux socket for cross-container access
+        # This allows the monitor container to access agent sessions
+        self.socket_path = Path(self.config.tmux_socket_path).expanduser()
+        self._ensure_tmux_socket_directory()
+        self.tmux_server = libtmux.Server(socket_path=str(self.socket_path))
 
         # Initialize worktree manager for agent isolation
         self.worktree_manager = WorktreeManager(db_manager)
+
+        # ✅ OPTIMIZATION: Cache CLI agent interfaces to avoid re-instantiation
+        # Each agent interface is stateless so can be safely reused per type
+        self._cli_agent_cache = {}  # Maps cli_type -> cli_agent instance
+
+    def _get_cached_cli_agent(self, cli_type: str):
+        """Get a cached CLI agent interface, creating if needed.
+
+        ✅ OPTIMIZATION: Reuse stateless CLI agent instances to avoid
+        re-instantiation overhead on every message.
+
+        Args:
+            cli_type: Type of CLI agent (opencode, claude, etc.)
+
+        Returns:
+            CLI agent interface instance
+        """
+        if cli_type not in self._cli_agent_cache:
+            self._cli_agent_cache[cli_type] = get_cli_agent(cli_type)
+            logger.debug(f"Cached CLI agent: {cli_type}")
+        return self._cli_agent_cache[cli_type]
+
+    def _ensure_tmux_socket_directory(self) -> None:
+        """Ensure the tmux socket directory exists before launching sessions."""
+        try:
+            socket_dir = self.socket_path.parent
+            socket_dir.mkdir(parents=True, exist_ok=True)
+
+            # Make directory world-writable so both server and monitor containers can access it
+            import os
+            import stat
+
+            os.chmod(socket_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+        except Exception as e:
+            logger.warning(f"Failed to prepare tmux socket directory at {self.socket_path}: {e}")
+
+    def _tmux_has_session(self, session_name: str) -> bool:
+        """Check if tmux session exists using subprocess (bypasses libtmux bug).
+
+        libtmux has a bug where it silently catches all exceptions in the sessions
+        property, returning an empty list even when sessions exist. This method
+        uses subprocess to directly call tmux and properly handle errors.
+
+        Args:
+            session_name: Name of the tmux session to check
+
+        Returns:
+            True if session exists, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                ["tmux", "-S", str(self.socket_path), "has-session", "-t", session_name],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            return result.returncode == 0
+        except Exception as e:
+            logger.warning(f"Error checking tmux session {session_name}: {e}")
+            return False
+
+    def _tmux_capture_pane(self, session_name: str, lines: Optional[int] = None) -> str:
+        """Capture pane output from tmux session using subprocess.
+
+        Args:
+            session_name: Name of the tmux session
+            lines: Number of lines to capture (None = all)
+
+        Returns:
+            Captured output as string
+        """
+        try:
+            cmd = ["tmux", "-S", str(self.socket_path), "capture-pane", "-t", session_name, "-p"]
+            if lines and lines > 0:
+                cmd.extend(["-S", f"-{lines}"])
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if result.returncode == 0:
+                return result.stdout
+            else:
+                logger.warning(f"Failed to capture pane for {session_name}: {result.stderr}")
+                return ""
+        except Exception as e:
+            logger.warning(f"Error capturing pane for {session_name}: {e}")
+            return ""
+
+    def _paste_text_to_pane(self, pane: libtmux.Pane, text: str) -> bool:
+        """Inject text into a tmux pane via buffer/paste to avoid slow key simulation."""
+        if not text:
+            return True
+
+        pane_id = getattr(pane, "pane_id", None)
+        if not pane_id:
+            logger.warning("Cannot paste text: pane has no pane_id")
+            return False
+
+        buffer_name = f"hep_buf_{uuid.uuid4().hex[:8]}"
+        try:
+            load_cmd = ["tmux", "-S", str(self.socket_path), "load-buffer", "-b", buffer_name, "-"]
+            subprocess.run(load_cmd, input=text, text=True, check=True)
+
+            paste_cmd = ["tmux", "-S", str(self.socket_path), "paste-buffer", "-t", pane_id, "-b", buffer_name]
+            subprocess.run(paste_cmd, check=True)
+
+            delete_cmd = ["tmux", "-S", str(self.socket_path), "delete-buffer", "-b", buffer_name]
+            subprocess.run(delete_cmd, check=True)
+
+            logger.debug(f"Pasted {len(text)} characters into pane {pane_id} via tmux buffer")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to paste text via tmux buffer: {e}")
+            return False
+
+    async def _deliver_message_to_cli(
+        self,
+        pane: libtmux.Pane,
+        message: str,
+        *,
+        chunk_size: int = 2000,
+        log_prefix: Optional[str] = None,
+        submit: bool = True,
+        submit_delay: float = 0.2,
+    ) -> None:
+        """Deliver a (potentially large) message to a CLI pane efficiently."""
+        if not message:
+            return
+
+        label = log_prefix or "CLI message"
+        if self._paste_text_to_pane(pane, message):
+            logger.info(f"{label}: delivered via tmux paste-buffer ({len(message)} chars)")
+        else:
+            logger.warning(f"{label}: paste-buffer failed, falling back to chunked send_keys")
+            for i in range(0, len(message), chunk_size):
+                chunk = message[i:i + chunk_size]
+                pane.send_keys(chunk, enter=False)
+                await asyncio.sleep(0.05)
+
+        if submit:
+            await asyncio.sleep(submit_delay)
+            pane.send_keys('', enter=True)
+
+    async def _wait_for_cli_ready(
+        self,
+        cli_agent: CLIAgentInterface,
+        session_name: str,
+        *,
+        timeout_seconds: Optional[int] = None,
+        poll_interval: float = 2.0,
+    ) -> bool:
+        """Wait until the CLI displays its ready prompt (or timeout)."""
+        timeout_seconds = timeout_seconds or getattr(self.config, "cli_ready_timeout_seconds", 60)
+        poll_interval = max(poll_interval, 0.5)
+
+        try:
+            readiness_pattern = cli_agent.get_health_check_pattern()
+        except Exception as exc:
+            logger.warning(f"Could not get health check pattern: {exc}")
+            readiness_pattern = None
+
+        if not readiness_pattern:
+            logger.info("No readiness pattern provided; using static wait")
+            await asyncio.sleep(min(timeout_seconds, 5))
+            return True
+
+        deadline = time.monotonic() + timeout_seconds
+        await asyncio.sleep(min(poll_interval, 1.0))
+
+        while time.monotonic() < deadline:
+            output = self._tmux_capture_pane(session_name, lines=400)
+            if output and re.search(readiness_pattern, output, re.MULTILINE | re.IGNORECASE):
+                logger.info(f"Detected CLI readiness for session {session_name}")
+                return True
+            await asyncio.sleep(poll_interval)
+
+        logger.warning(f"Timed out waiting for CLI readiness in session {session_name}")
+        return False
 
     async def create_agent_for_task(
         self,
@@ -272,15 +464,26 @@ class AgentManager:
                 f.write(initial_message)
             logger.info(f"🔍 DEBUG: Full initial message saved to: {debug_prompt_path}")
 
-            # Wait for CLI to initialize first
-            wait_time = 25
-            logger.info(f"Waiting {wait_time} seconds for {cli_type} agent {agent_id} to initialize...")
-            await asyncio.sleep(wait_time)
+            ready_timeout = getattr(self.config, "cli_ready_timeout_seconds", 60)
+            logger.info(
+                f"Waiting up to {ready_timeout} seconds for {cli_type} agent {agent_id} "
+                f"to reach its prompt..."
+            )
+            ready = await self._wait_for_cli_ready(
+                cli_agent,
+                session_name,
+                timeout_seconds=ready_timeout,
+                poll_interval=1.0,
+            )
+            if not ready:
+                logger.warning(
+                    f"{cli_type} agent {agent_id} did not confirm readiness within "
+                    f"{ready_timeout}s; proceeding with prompt delivery anyway."
+                )
 
-            # Check if tmux session is still alive
             if not self.tmux_server.has_session(session_name):
                 logger.error(f"Tmux session {session_name} died during initialization wait!")
-                raise Exception(f"Tmux session died during initialization wait")
+                raise Exception("Tmux session died during initialization wait")
 
             # Send initial prompt (or just Enter for OpenCode)
             await self._send_initial_prompt_with_retry(
@@ -290,7 +493,8 @@ class AgentManager:
                 initial_message=initial_message,
                 agent_id=agent_id,
                 task_id=task.id,
-                max_retries=3
+                max_retries=3,
+                verify_delivery=True  # ✅ Enable prompt delivery verification
             )
 
             logger.info(f"=== END INITIAL PROMPT DELIVERY for agent {agent_id} ===")
@@ -303,7 +507,10 @@ class AgentManager:
             return AgentInfo(agent_id_to_return)
 
         except Exception as e:
-            logger.error(f"Failed to create agent: {e}")
+            # Log full error with traceback
+            error_traceback = traceback.format_exc()
+            logger.error(f"Failed to create agent for task {task.id}: {e}", exc_info=True)
+
             # Clean up on failure
             try:
                 # Kill tmux session if it exists
@@ -324,13 +531,16 @@ class AgentManager:
                             agent_record.status = "terminated"
                             logger.info(f"Marked agent {agent_id} as terminated")
 
-                    # Mark task as failed
+                    # Mark task as failed with full error details
                     task_record = cleanup_session.query(Task).filter_by(id=task.id).first()
                     if task_record:
                         task_record.status = "failed"
                         task_record.failure_reason = f"Agent creation failed: {str(e)}"
+                        # Store full traceback if task model supports it
+                        if hasattr(task_record, 'error_details'):
+                            task_record.error_details = error_traceback
                         task_record.completed_at = datetime.utcnow()
-                        logger.info(f"Marked task {task.id} as failed")
+                        logger.info(f"Marked task {task.id} as failed with error: {str(e)}")
 
                     cleanup_session.commit()
                 except Exception as db_error:
@@ -354,6 +564,9 @@ class AgentManager:
         Returns:
             Created tmux session
         """
+        # Ensure tmux socket path is ready on every session creation attempt
+        self._ensure_tmux_socket_directory()
+
         # Ensure tmux server is running by checking for sessions
         # If no sessions exist, create a temporary one to start the server
         try:
@@ -396,6 +609,19 @@ class AgentManager:
         session_kwargs["start_directory"] = working_directory
 
         session = self.tmux_server.new_session(**session_kwargs)
+
+        # Fix socket permissions for cross-container access
+        # Make the socket readable/writable by all (needed for monitor in different container)
+        import os
+        import stat
+        socket_path = self.tmux_server.socket_path
+        if socket_path and os.path.exists(socket_path):
+            try:
+                # Set permissions to 666 (rw-rw-rw-)
+                os.chmod(socket_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+                logger.debug(f"Set socket permissions for cross-container access: {socket_path}")
+            except Exception as e:
+                logger.warning(f"Failed to set socket permissions: {e}")
 
         # Note: env_vars are exported in the shell before launching the agent
         # (see create_agent_for_task and restart_agent methods)
@@ -539,7 +765,17 @@ NOTE: Having a workflow-level goal does NOT mean you skip update_task_status. Yo
 IMPORTANT INSTRUCTIONS:
 1. Complete all the requirements listed in the COMPLETION CRITERIA above
 
-2. """
+2. 🚫 NEVER RUN DEV SERVERS OR LONG-RUNNING PROCESSES! 🚫
+   - ❌ DO NOT run `npm run dev`, `npm start`, `python manage.py runserver`, or any dev server
+   - ❌ DO NOT run any long-running processes that block your terminal
+   - ❌ DO NOT start servers to "verify they work" - this will HANG your agent!
+   - ✅ DO verify builds work: `npm run build`, `npm run type-check`, `npm run lint`
+   - ✅ DO run tests: `npm test`, `pytest`, etc. (tests should exit when done)
+   - ✅ DO check that server CAN start by verifying config files exist, not by running it
+   - **WHY**: Dev servers never exit and will block you from completing the task
+   - **INSTEAD**: Document in test instructions how to verify the server works
+
+3. """
 
         # Get workflow_id for API calls
         workflow_id = task.workflow_id or "UNKNOWN"
@@ -810,37 +1046,35 @@ REMEMBER:
         # If verification is disabled, just send once and return
         if not verify_delivery:
             if is_opencode:
-                # OpenCode: Prompt already loaded via -p flag, just send Enter after 5 seconds
-                logger.info(f"OpenCode agent: Prompt loaded via -p flag, waiting 5 seconds then sending Enter")
-                await asyncio.sleep(5)
+                # OpenCode: Prompt already loaded via -p flag, just send Enter after 2 seconds
+                logger.info(f"OpenCode agent: Prompt loaded via -p flag, waiting 2 seconds then sending Enter")
+                await asyncio.sleep(1)
                 pane.send_keys('', enter=True)  # Send Enter to submit the prompt
                 logger.info(f"OpenCode: Enter sent to agent {agent_id}")
             elif is_claude or is_droid:
-                # Claude/Droid: Send in chunks to avoid tmux buffer issues with large prompts
+                # ✅ ATOMIC DELIVERY: Use paste-buffer instead of chunked send_keys
+                # This avoids character loss and newline interpretation issues
                 agent_name = "Claude" if is_claude else "Droid"
-                logger.info(f"Sending initial prompt to {agent_name} agent {agent_id} (verification disabled)")
+                logger.info(f"Sending initial prompt to {agent_name} agent {agent_id} (atomic delivery, verification disabled)")
                 formatted_message = cli_agent.format_message(initial_message)
 
-                chunk_size = 2500  # characters per chunk
-                num_chunks = (len(formatted_message) + chunk_size - 1) // chunk_size
-                logger.info(f"{agent_name} agent: Sending prompt in {num_chunks} chunks ({len(formatted_message)} total chars)")
-
-                for i in range(0, len(formatted_message), chunk_size):
-                    chunk = formatted_message[i:i+chunk_size]
-                    pane.send_keys(chunk)  # No enter=True, just send the text
-                    await asyncio.sleep(0.2)  # Delay between chunks to avoid overwhelming tmux
-
-                # Now send Enter to submit the entire message
-                logger.info(f"All chunks sent, submitting message with Enter")
-                await asyncio.sleep(0.5)  # Brief pause before Enter
-                pane.send_keys('', enter=True)  # This sends just the Enter key
+                await self._deliver_message_to_cli(
+                    pane,
+                    formatted_message,
+                    chunk_size=2500,
+                    log_prefix=f"{agent_name} agent initial prompt (no verification) [{agent_id[:8]}]",
+                )
                 logger.info(f"Initial prompt sent to {agent_name} agent {agent_id}")
             else:
                 # Other agents: Send entire prompt in one go
                 logger.info(f"Sending initial prompt to agent {agent_id} (verification disabled)")
                 formatted_message = cli_agent.format_message(initial_message)
-                logger.info(f"Non-Claude agent: Sending entire prompt in one message ({len(formatted_message)} chars)")
-                pane.send_keys(formatted_message, enter=True)
+                await self._deliver_message_to_cli(
+                    pane,
+                    formatted_message,
+                    chunk_size=2500,
+                    log_prefix=f"{cli_type} initial prompt (no verification) [{agent_id[:8]}]",
+                )
                 logger.info(f"Initial prompt sent to agent {agent_id}")
 
             return
@@ -850,32 +1084,36 @@ REMEMBER:
             logger.info(f"Sending initial prompt to agent {agent_id} (attempt {attempt}/{max_retries})")
 
             if is_opencode:
-                # OpenCode: Prompt already loaded via -p flag, just send Enter after 5 seconds
-                logger.info(f"OpenCode agent: Prompt loaded via -p flag, waiting 5 seconds then sending Enter")
-                await asyncio.sleep(5)
+                # OpenCode: Prompt already loaded via -p flag, just send Enter after 2 seconds
+                logger.info(f"OpenCode agent: Prompt loaded via -p flag, waiting 2 seconds then sending Enter")
+                await asyncio.sleep(.2)
                 pane.send_keys('', enter=True)  # Send Enter to submit the prompt
             elif is_claude or is_droid:
-                # Claude/Droid: Send in chunks to avoid tmux buffer issues with large prompts
+                # ✅ ATOMIC DELIVERY: Use paste-buffer instead of chunked send_keys
                 agent_name = "Claude" if is_claude else "Droid"
                 formatted_message = cli_agent.format_message(initial_message)
-                chunk_size = 2000  # characters per chunk
-                num_chunks = (len(formatted_message) + chunk_size - 1) // chunk_size
-                logger.info(f"{agent_name} agent: Sending prompt in {num_chunks} chunks ({len(formatted_message)} total chars)")
-
-                for i in range(0, len(formatted_message), chunk_size):
-                    chunk = formatted_message[i:i+chunk_size]
-                    pane.send_keys(chunk)  # No enter=True, just send the text
-                    await asyncio.sleep(0.1)  # Delay between chunks to avoid overwhelming tmux
-
-                # Now send Enter to submit the entire message
-                logger.info(f"All chunks sent, submitting message with Enter")
-                await asyncio.sleep(0.5)  # Brief pause before Enter
-                pane.send_keys('', enter=True)  # This sends just the Enter key
+                log_prefix = (
+                    f"{agent_name} agent initial prompt attempt {attempt}/{max_retries} "
+                    f"(verification enabled) [{agent_id[:8]}]"
+                )
+                await self._deliver_message_to_cli(
+                    pane,
+                    formatted_message,
+                    chunk_size=2000,
+                    log_prefix=log_prefix,
+                )
             else:
                 # Other agents: Send entire prompt in one go
                 formatted_message = cli_agent.format_message(initial_message)
-                logger.info(f"Non-Claude agent: Sending entire prompt in one message ({len(formatted_message)} chars)")
-                pane.send_keys(formatted_message, enter=True)
+                await self._deliver_message_to_cli(
+                    pane,
+                    formatted_message,
+                    chunk_size=2000,
+                    log_prefix=(
+                        f"{cli_type} initial prompt attempt {attempt}/{max_retries} "
+                        f"(verification enabled) [{agent_id[:8]}]"
+                    ),
+                )
 
             # Verify delivery
             if await self._verify_prompt_delivery(pane, verification_string, wait_seconds=10):
@@ -886,7 +1124,7 @@ REMEMBER:
 
             if attempt < max_retries:
                 logger.info(f"Retrying prompt delivery for agent {agent_id}...")
-                await asyncio.sleep(2)  # Brief pause before retry
+                await asyncio.sleep(.5)  # Brief pause before retry
 
         # All retries failed
         error_msg = f"Failed to deliver initial prompt to agent {agent_id} after {max_retries} attempts"
@@ -984,6 +1222,13 @@ REMEMBER:
                 logger.error(f"Task {agent.current_task_id} not found")
                 return
 
+            worktree_path = None
+            worktree_record = session.query(AgentWorktree).filter_by(agent_id=agent_id).first()
+            if worktree_record:
+                worktree_path = worktree_record.worktree_path
+            else:
+                logger.warning(f"No worktree record found for agent {agent_id} during restart")
+
             # Kill existing tmux session
             if agent.tmux_session_name:
                 try:
@@ -1064,13 +1309,18 @@ REMEMBER:
             # Create new tmux session with env vars
             # Use agent_id for unique session names (not task_id which can be reused on restarts)
             new_session_name = f"{self.config.tmux_session_prefix}_{agent_id[:8]}_r"
-            tmux_session = self._create_tmux_session(new_session_name, env_vars=env_vars)
+            tmux_session = self._create_tmux_session(
+                new_session_name,
+                working_directory=worktree_path,
+                env_vars=env_vars
+            )
 
             # Relaunch agent
             cli_agent = get_cli_agent(agent.cli_type)
             launch_command = cli_agent.get_launch_command(
                 system_prompt=agent.system_prompt,
                 task_id=task.id,
+                worktree_path=worktree_path,
             )
 
             pane = tmux_session.attached_window.attached_pane
@@ -1085,6 +1335,23 @@ REMEMBER:
 
             # Now send the claude launch command
             pane.send_keys(launch_command, enter=True)
+
+            ready_timeout = getattr(self.config, "cli_ready_timeout_seconds", 60)
+            logger.info(
+                f"Waiting up to {ready_timeout} seconds for restarted {agent.cli_type} agent "
+                f"{agent_id} to reach its prompt..."
+            )
+            ready = await self._wait_for_cli_ready(
+                cli_agent,
+                new_session_name,
+                timeout_seconds=ready_timeout,
+                poll_interval=1.0,
+            )
+            if not ready:
+                logger.warning(
+                    f"Restarted {agent.cli_type} agent {agent_id} did not confirm readiness "
+                    f"within {ready_timeout}s; continuing anyway."
+                )
 
             # Update agent record
             agent.tmux_session_name = new_session_name
@@ -1104,9 +1371,13 @@ REMEMBER:
             session.commit()
 
             # Send task reminder after restart
-            await asyncio.sleep(3)
             reminder = f"You were restarted. Continue working on task {task.id}: {task.enriched_description[:200]}"
-            pane.send_keys(cli_agent.format_message(reminder))
+            await self._deliver_message_to_cli(
+                pane,
+                cli_agent.format_message(reminder),
+                chunk_size=800,
+                log_prefix=f"Restart reminder for agent {agent_id[:8]}",
+            )
 
             logger.info(f"Agent {agent_id} restarted successfully")
 
@@ -1163,30 +1434,16 @@ REMEMBER:
 
             logger.debug(f"Attempting to access tmux session: {agent.tmux_session_name}")
 
-            # Use has_session instead of deprecated find_where
-            has_session = self.tmux_server.has_session(agent.tmux_session_name)
-            logger.debug(f"has_session({agent.tmux_session_name}) = {has_session}")
-            if not has_session:
+            # Use subprocess-based method to bypass libtmux bug
+            # libtmux silently catches all exceptions in sessions property, returning empty list
+            if not self._tmux_has_session(agent.tmux_session_name):
                 logger.warning(f"Tmux session {agent.tmux_session_name} not found")
                 return ""
 
-            logger.debug(f"Finding session by iteration: {agent.tmux_session_name}")
-            tmux_session = None
-            for tmux_sess in self.tmux_server.sessions:
-                if tmux_sess.name == agent.tmux_session_name:
-                    tmux_session = tmux_sess
-                    break
+            logger.debug(f"Session exists, capturing pane output")
+            output = self._tmux_capture_pane(agent.tmux_session_name, lines)
 
-            logger.debug(f"Session iteration result: {tmux_session}")
-            if not tmux_session:
-                logger.warning(f"Could not get tmux session {agent.tmux_session_name}")
-                return ""
-
-            logger.debug(f"Successfully got tmux session: {tmux_session}")
-            pane = tmux_session.attached_window.attached_pane
-            output = pane.cmd("capture-pane", "-p", f"-S -{lines}").stdout
-
-            return "\n".join(output) if output else ""
+            return output
 
         except Exception as e:
             logger.error(f"Failed to get agent output for {agent_id}: {e}")
@@ -1194,19 +1451,23 @@ REMEMBER:
         finally:
             session.close()
 
-    async def send_message_to_agent(self, agent_id: str, message: str):
-        """Send a message to an agent's tmux session.
+    async def send_message_to_agent(self, agent_id: str, message: str, verify_delivery: bool = True) -> bool:
+        """Send a message to an agent's tmux session with optional delivery verification.
 
         Args:
             agent_id: Agent ID
             message: Message to send
+            verify_delivery: If True, verify message appeared in tmux output (default: True)
+
+        Returns:
+            True if message was sent successfully (and verified if requested), False otherwise
         """
         session = self.db_manager.get_session()
         try:
             agent = session.query(Agent).filter_by(id=agent_id).first()
             if not agent or not agent.tmux_session_name:
                 logger.warning(f"Agent {agent_id} not found or no tmux session")
-                return
+                return False
 
             logger.debug(f"Sending message to tmux session: {agent.tmux_session_name}")
 
@@ -1214,7 +1475,7 @@ REMEMBER:
             logger.debug(f"has_session({agent.tmux_session_name}) = {has_session}")
             if not has_session:
                 logger.warning(f"Tmux session {agent.tmux_session_name} not found")
-                return
+                return False
 
             logger.debug(f"Finding session by iteration for message: {agent.tmux_session_name}")
             tmux_session = None
@@ -1226,19 +1487,29 @@ REMEMBER:
             logger.debug(f"Session iteration result for message: {tmux_session}")
             if not tmux_session:
                 logger.warning(f"Could not get tmux session {agent.tmux_session_name}")
-                return
+                return False
 
-            # Get CLI agent interface
-            cli_agent = get_cli_agent(agent.cli_type)
+            # ✅ OPTIMIZATION: Use cached CLI agent interface
+            cli_agent = self._get_cached_cli_agent(agent.cli_type)
             formatted_message = cli_agent.format_message(message)
 
             # Send message
             pane = tmux_session.attached_window.attached_pane
-            pane.send_keys(formatted_message, enter=True)
 
-            # Wait a moment then send Enter to ensure message is submitted
-            await asyncio.sleep(1)
-            pane.send_keys('', enter=True)
+            # ✅ FIX: Only send trailing Enter for OpenCode (which needs it)
+            # Claude/Droid interpret embedded newlines as submit, creating empty turns
+            # Other agents handle submission differently
+            if agent.cli_type == "opencode":
+                # OpenCode: Send message with trailing Enter
+                pane.send_keys(formatted_message, enter=True)
+                logger.debug(f"Sent message to OpenCode agent {agent_id} with trailing Enter")
+            else:
+                # Claude/Droid/others: Send message without trailing Enter
+                # The agent will handle submission via its own prompt mechanism
+                pane.send_keys(formatted_message, enter=False)
+                await asyncio.sleep(0.2)
+                pane.send_keys('', enter=True)  # Single explicit Enter
+                logger.debug(f"Sent message to {agent.cli_type} agent {agent_id} without embedded newline")
 
             # Update last activity
             agent.last_activity = datetime.utcnow()
@@ -1246,9 +1517,33 @@ REMEMBER:
 
             logger.debug(f"Sent message to agent {agent_id}")
 
+            # Verify delivery if requested
+            if verify_delivery:
+                logger.debug(f"Verifying message delivery to agent {agent_id}")
+                await asyncio.sleep(2)  # Wait for message to appear in terminal
+
+                # Read back tmux output
+                output = self.get_agent_output(agent_id, lines=100)
+
+                # Check if message appears in output
+                # Look for a unique part of the message that should appear
+                if message in output:
+                    logger.info(f"✅ Verified message delivery to agent {agent_id[:8]}...")
+                    return True
+                else:
+                    logger.warning(
+                        f"⚠️  Message NOT found in agent {agent_id[:8]}... output after sending. "
+                        f"Message may have been lost or agent terminal may be unresponsive."
+                    )
+                    return False
+
+            # If verification disabled, assume success
+            return True
+
         except Exception as e:
             logger.error(f"Failed to send message to agent: {e}")
             session.rollback()
+            return False
         finally:
             session.close()
 
@@ -1342,8 +1637,18 @@ REMEMBER:
             # Format message with direct message prefix
             formatted_message = f"\n[AGENT {sender_agent_id[:8]} TO AGENT {recipient_agent_id[:8]}]: {message}\n"
 
-            # Send the message
-            await self.send_message_to_agent(recipient_agent_id, formatted_message)
+            # Send the message with verification
+            delivery_verified = await self.send_message_to_agent(
+                recipient_agent_id,
+                formatted_message,
+                verify_delivery=True
+            )
+
+            if not delivery_verified:
+                logger.warning(
+                    f"Failed to verify message delivery from {sender_agent_id[:8]} to {recipient_agent_id[:8]}"
+                )
+                return False
 
             # Log the communication
             log_entry = AgentLog(
@@ -1356,12 +1661,13 @@ REMEMBER:
                     "message_type": "direct",
                     "message_content": message[:200],  # Truncate for storage
                     "timestamp": datetime.utcnow().isoformat(),
+                    "delivery_verified": delivery_verified,
                 }
             )
             session.add(log_entry)
             session.commit()
 
-            logger.info(f"Direct message sent from {sender_agent_id[:8]} to {recipient_agent_id[:8]}")
+            logger.info(f"✅ Direct message sent and verified from {sender_agent_id[:8]} to {recipient_agent_id[:8]}")
             return True
 
         except Exception as e:
@@ -1427,6 +1733,10 @@ REMEMBER:
         """
         session = self.db_manager.get_session()
         try:
+            # Expire all cached objects to ensure we get fresh data from database
+            # This is critical for seeing changes made by other processes or raw SQL
+            session.expire_all()
+
             agents = session.query(Agent).filter(
                 Agent.status != "terminated"
             ).all()

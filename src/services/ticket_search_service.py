@@ -190,8 +190,9 @@ class TicketSearchService:
         try:
             with get_db() as db:
                 # Build FTS5 query
-                # Use FTS5 MATCH syntax
-                fts_query = keywords
+                # Use FTS5 MATCH syntax with quoted phrase search
+                # Quotes prevent FTS5 special character interpretation (e.g., hyphen as NOT operator)
+                fts_query = f'"{keywords}"'
 
                 # Query FTS5 with JOIN to tickets table
                 sql = text(

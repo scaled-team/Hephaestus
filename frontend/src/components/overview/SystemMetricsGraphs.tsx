@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
 import { TrendingUp, Activity, Users, Filter } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { OVERVIEW_CARD } from './styles';
 
 interface MetricsDataPoint {
   timestamp: string;
@@ -62,12 +63,12 @@ export default function SystemMetricsGraphs({ metricsHistory, phases = [] }: Sys
     const data = payload[0].payload;
 
     return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-        <div className="text-sm font-medium text-gray-900">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+        <div className="text-sm font-medium text-gray-900 dark:text-white">
           {formatDistanceToNow(new Date(data.timestamp), { addSuffix: true })}
         </div>
         {data.phase && (
-          <div className="text-xs text-gray-500 mt-1">Phase: {data.phase}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Phase: {data.phase}</div>
         )}
         <div className="space-y-1 mt-2">
           {payload.map((entry: any) => (
@@ -76,7 +77,7 @@ export default function SystemMetricsGraphs({ metricsHistory, phases = [] }: Sys
                 className="w-3 h-3 rounded mr-2"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-gray-600">
+              <span className="text-gray-600 dark:text-gray-300">
                 {entry.name}: <span className="font-semibold">{entry.value}{entry.dataKey.includes('Percent') ? '%' : ''}</span>
               </span>
             </div>
@@ -91,7 +92,7 @@ export default function SystemMetricsGraphs({ metricsHistory, phases = [] }: Sys
       {/* Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Filter className="w-4 h-4 text-gray-500" />
+          <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           <div className="flex space-x-1">
             {['1h', '6h', '24h', 'all'].map((range) => (
               <button
@@ -100,7 +101,7 @@ export default function SystemMetricsGraphs({ metricsHistory, phases = [] }: Sys
                 className={`px-2 py-1 text-xs rounded ${
                   timeRange === range
                     ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {range === 'all' ? 'All' : range}
@@ -111,11 +112,11 @@ export default function SystemMetricsGraphs({ metricsHistory, phases = [] }: Sys
 
         {phases.length > 0 && (
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-gray-500">Phase:</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Phase:</span>
             <select
               value={selectedPhase || ''}
               onChange={(e) => setSelectedPhase(e.target.value || null)}
-              className="text-xs border rounded px-2 py-1"
+              className="text-xs border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">All Phases</option>
               {phases.map(phase => (
@@ -127,7 +128,7 @@ export default function SystemMetricsGraphs({ metricsHistory, phases = [] }: Sys
       </div>
 
       {/* Coherence & Alignment Graph */}
-      <Card>
+      <Card className={cn(OVERVIEW_CARD)}>
         <CardHeader>
           <CardTitle className="flex items-center text-base">
             <TrendingUp className="w-4 h-4 mr-2 text-blue-600" />
@@ -184,7 +185,7 @@ export default function SystemMetricsGraphs({ metricsHistory, phases = [] }: Sys
       </Card>
 
       {/* Active Agents Graph */}
-      <Card>
+      <Card className={cn(OVERVIEW_CARD)}>
         <CardHeader>
           <CardTitle className="flex items-center text-base">
             <Users className="w-4 h-4 mr-2 text-green-600" />
@@ -231,36 +232,36 @@ export default function SystemMetricsGraphs({ metricsHistory, phases = [] }: Sys
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">Current Coherence</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Current Coherence</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {filteredData[filteredData.length - 1].coherencePercent}%
                 </p>
               </div>
-              <Activity className="w-8 h-8 text-blue-200" />
+              <Activity className="w-8 h-8 text-blue-200 dark:text-blue-900" />
             </div>
           </Card>
 
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">Current Alignment</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Current Alignment</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {filteredData[filteredData.length - 1].alignmentPercent}%
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-green-200" />
+              <TrendingUp className="w-8 h-8 text-green-200 dark:text-green-900" />
             </div>
           </Card>
 
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">Active Agents</p>
-                <p className="text-2xl font-bold text-purple-600">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Active Agents</p>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                   {filteredData[filteredData.length - 1].agentCount}
                 </p>
               </div>
-              <Users className="w-8 h-8 text-purple-200" />
+              <Users className="w-8 h-8 text-purple-200 dark:text-purple-900" />
             </div>
           </Card>
         </div>

@@ -323,6 +323,28 @@ class WorktreeManager:
             )
             raise
 
+    def _ensure_clean_main_repo(self, agent_id: str) -> None:
+        """Ensure the main repository has no local modifications before merging."""
+        try:
+            if not self.main_repo.is_dirty(untracked_files=True):
+                logger.info(f"[GIT-MERGE:{agent_id}] Main repository already clean")
+                return
+
+            logger.warning(f"[GIT-MERGE:{agent_id}] ⚠️ Main repository has local changes; resetting before merge")
+            try:
+                status = self.main_repo.git.status("--short")
+                if status:
+                    logger.warning(f"[GIT-MERGE:{agent_id}] Dirty files:\n{status}")
+            except Exception:
+                logger.debug(f"[GIT-MERGE:{agent_id}] Unable to list dirty files before reset")
+
+            self.main_repo.git.reset("--hard")
+            self.main_repo.git.clean("-fd")
+            logger.info(f"[GIT-MERGE:{agent_id}] ✓ Main repository reset to HEAD and cleaned")
+        except Exception as exc:
+            logger.error(f"[GIT-MERGE:{agent_id}] Failed to clean main repository: {exc}")
+            raise
+
     def create_agent_worktree(
         self,
         agent_id: str,
@@ -826,6 +848,9 @@ class WorktreeManager:
             logger.info(f"[GIT-MERGE:{agent_id}] STEP 7: Checking out '{target_branch}' in main repo")
             logger.info(f"[GIT-MERGE:{agent_id}]   Main repo current HEAD: {self.main_repo.head.commit.hexsha}")
 
+            # Ensure there are no local changes that would block the merge
+            self._ensure_clean_main_repo(agent_id)
+
             self.main_repo.heads[target_branch].checkout()
 
             logger.info(f"[GIT-MERGE:{agent_id}]   ✓ Checked out '{target_branch}'")
@@ -1110,8 +1135,32 @@ class WorktreeManager:
 
         logger.info(f"[WORKTREE] Parent worktree found at: {parent_worktree.worktree_path}")
 
+        # Check if parent worktree path still exists
+        parent_path = Path(parent_worktree.worktree_path)
+        if not parent_path.exists():
+            logger.warning(f"[WORKTREE] Parent worktree path no longer exists: {parent_worktree.worktree_path}")
+            logger.info(f"[WORKTREE] Parent was likely cleaned up, using parent's base commit SHA from database")
+            # Use the parent's base_commit_sha from the database instead of accessing the worktree
+            if parent_worktree.base_commit_sha:
+                logger.info(f"[WORKTREE] Using parent's base commit SHA: {parent_worktree.base_commit_sha}")
+                return parent_worktree.base_commit_sha
+            else:
+                logger.warning(f"[WORKTREE] No base commit SHA found for parent, falling back to main branch")
+                return None
+
         # Open parent worktree repository
-        parent_repo = Repo(parent_worktree.worktree_path)
+        try:
+            parent_repo = Repo(parent_worktree.worktree_path)
+        except Exception as e:
+            logger.warning(f"[WORKTREE] Failed to open parent worktree repository: {e}")
+            logger.info(f"[WORKTREE] Trying to use parent's base commit SHA from database")
+            # Try to use the parent's base_commit_sha from the database
+            if parent_worktree.base_commit_sha:
+                logger.info(f"[WORKTREE] Using parent's base commit SHA: {parent_worktree.base_commit_sha}")
+                return parent_worktree.base_commit_sha
+            else:
+                logger.warning(f"[WORKTREE] No base commit SHA found for parent, falling back to main branch")
+                return None
 
         # Check if parent worktree belongs to the same main repository
         # Worktrees have a .git file pointing to the main repo's .git/worktrees directory

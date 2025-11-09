@@ -7,6 +7,8 @@ import { apiService } from '@/services/api';
 import { BlockedTask, BlockerTicket } from '@/types';
 import StatusBadge from '@/components/StatusBadge';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { OVERVIEW_CARD, OVERVIEW_SURFACE } from '@/components/overview/styles';
 
 interface BlockedTasksViewProps {
   onViewTicketDetails?: (ticketId: string) => void;
@@ -47,7 +49,7 @@ const BlockedTasksView: React.FC<BlockedTasksViewProps> = ({ onViewTicketDetails
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700"
+        className={cn(OVERVIEW_CARD, "p-8 text-center")}
       >
         <div className="flex flex-col items-center">
           <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full mb-4">
@@ -66,12 +68,15 @@ const BlockedTasksView: React.FC<BlockedTasksViewProps> = ({ onViewTicketDetails
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg overflow-hidden"
+      className={cn(
+        OVERVIEW_CARD,
+        "overflow-hidden border-red-200/60 dark:border-red-900/50 bg-red-50/40 dark:bg-red-900/10"
+      )}
     >
       {/* Compact Collapsible Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full bg-red-100 dark:bg-red-900/20 hover:bg-red-150 dark:hover:bg-red-900/30 px-4 py-2.5 transition-colors border-b border-red-200 dark:border-red-800"
+        className="w-full bg-red-100/70 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 px-4 py-2.5 transition-colors border-b border-red-200/60 dark:border-red-900/40"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -100,7 +105,7 @@ const BlockedTasksView: React.FC<BlockedTasksViewProps> = ({ onViewTicketDetails
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="divide-y divide-red-200 dark:divide-red-800/50">
+            <div className="divide-y divide-red-200/70 dark:divide-red-900/30">
               {blockedTasks.map((task, index) => (
                 <BlockedTaskCard
                   key={task.task_id}
@@ -132,7 +137,7 @@ const BlockedTaskCard: React.FC<BlockedTaskCardProps> = ({ task, index, onViewTi
     : task.description;
 
   return (
-    <div className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors px-4 py-3">
+    <div className={cn(OVERVIEW_SURFACE, "px-4 py-3 bg-white/80 dark:bg-white/5 hover:border-blue-200/60 dark:hover:border-blue-900/30 transition-colors")}>
       <div className="flex items-start justify-between gap-3">
         {/* Left: Task Info */}
         <div className="flex-1 min-w-0">
@@ -181,7 +186,7 @@ const BlockedTaskCard: React.FC<BlockedTaskCardProps> = ({ task, index, onViewTi
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-1.5"
+            className="mt-3 pt-3 border-t border-gray-200/70 dark:border-white/10 space-y-1.5"
           >
             {task.blocking_tickets.map((blocker) => (
               <BlockerTicketRow
@@ -206,7 +211,10 @@ const BlockerTicketRow: React.FC<BlockerTicketRowProps> = ({ blocker, onViewTick
   return (
     <button
       onClick={() => onViewTicket(blocker.ticket_id)}
-      className="w-full bg-gray-50 dark:bg-gray-900/50 rounded px-2 py-1.5 flex items-center justify-between hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-all border border-gray-200 dark:border-gray-700 text-left"
+      className={cn(
+        OVERVIEW_SURFACE,
+        "w-full rounded px-2 py-1.5 flex items-center justify-between text-left hover:border-blue-300/70 dark:hover:border-blue-900/50 hover:bg-blue-50/70 dark:hover:bg-blue-900/20 transition-all"
+      )}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <Lock className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />

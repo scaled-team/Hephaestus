@@ -6,6 +6,10 @@ import uuid
 import logging
 import os
 import time
+import shutil
+import subprocess
+from collections import deque
+from pathlib import Path
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Header, WebSocket, WebSocketDisconnect, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +18,7 @@ from pydantic import BaseModel, Field
 import asyncio
 
 from src.core.simple_config import get_config
-from src.core.database import DatabaseManager, Task, Agent, Memory, Phase, ValidationReview, AgentResult, WorkflowResult, Workflow, get_db
+from src.core.database import DatabaseManager, Task, Agent, Memory, Phase, ValidationReview, AgentResult, WorkflowResult, Workflow, BoardConfig, Ticket, get_db
 from src.core.worktree_manager import WorktreeManager
 from src.interfaces import get_cli_agent
 from src.memory.vector_store import VectorStoreManager
@@ -51,6 +55,17 @@ if config.enable_cors:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+try:
+    import psutil  # type: ignore
+except ImportError:  # pragma: no cover
+    psutil = None
+
+SERVER_START_TIME = datetime.utcnow()
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_MONITOR_LOG_PATHS = [
+    REPO_ROOT / "data/logs/monitor.log",
+    REPO_ROOT / "logs/monitor.log",
+]
 
 
 # Request/Response Models
@@ -213,7 +228,7 @@ class CreateTicketRequest(BaseModel):
     workflow_id: Optional[str] = Field(default=None, description="ID of the workflow (auto-detected from agent's task if not provided)")
     title: str = Field(..., min_length=3, max_length=500, description="Short, descriptive title")
     description: str = Field(..., min_length=10, description="Detailed description")
-    ticket_type: str = Field(default="task", description="Type of ticket (bug, feature, improvement, task, spike)")
+    ticket_type: str = Field(default="component", description="Type of ticket (component, bug, design-revision, documentation)")
     priority: str = Field(default="medium", pattern="^(low|medium|high|critical)$", description="Priority level")
     initial_status: Optional[str] = Field(default=None, description="Initial status (if None, uses board_config.initial_status)")
     assigned_agent_id: Optional[str] = Field(default=None, description="Optional agent to assign to")
@@ -649,6 +664,147 @@ class ServerState:
 server_state = ServerState()
 
 
+async def safe_broadcast(message: Dict[str, Any], context: str = "general_update"):
+    """Send broadcasts without letting websocket failures break core flows."""
+    try:
+        await server_state.broadcast_update(message)
+    except Exception as exc:  # pragma: no cover - defensive safety net
+        logger.warning(f"[BROADCAST_FAIL][{context}] {exc}")
+
+
+def _format_uptime(total_seconds: float) -> str:
+    """Format uptime seconds into a readable string."""
+    total_seconds = int(max(total_seconds, 0))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes}m {seconds}s"
+    if minutes:
+        return f"{minutes}m {seconds}s"
+    return f"{seconds}s"
+
+
+def _get_resource_usage() -> Dict[str, float]:
+    """Return CPU and memory usage, falling back if psutil isn't available."""
+    cpu_usage = 0.0
+    memory_usage = 0.0
+
+    if psutil:
+        try:
+            cpu_usage = float(psutil.cpu_percent(interval=None))
+            memory_usage = float(psutil.virtual_memory().percent)
+            return {"cpu": cpu_usage, "memory": memory_usage}
+        except Exception as exc:  # pragma: no cover
+            logger.warning(f"psutil resource check failed: {exc}")
+
+    if hasattr(os, "getloadavg"):
+        load1 = os.getloadavg()[0]
+        cores = os.cpu_count() or 1
+        cpu_usage = min(100.0, round((load1 / cores) * 100, 2))
+
+    # Memory fallback is best-effort using process RSS if psutil missing
+    try:
+        import resource  # type: ignore
+
+        rss_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        memory_usage = round(rss_kb / 1024.0, 2)
+    except Exception:
+        memory_usage = 0.0
+
+    return {"cpu": cpu_usage, "memory": memory_usage}
+
+
+def _tail_file(path: Path, max_lines: int) -> Optional[str]:
+    """Return the last N lines from a file."""
+    if not path.exists() or not path.is_file():
+        return None
+
+    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+        lines = deque(handle, max_lines)
+    return "".join(lines)
+
+
+def _build_recent_task_events(session, limit: int = 5) -> List[str]:
+    """Generate recent task events for the monitor endpoint."""
+    events: List[str] = []
+    try:
+        recent_tasks = session.query(Task).order_by(Task.created_at.desc()).limit(limit).all()
+        for task in recent_tasks:
+            timestamp = (
+                task.completed_at
+                or task.started_at
+                or task.created_at
+                or datetime.utcnow()
+            ).isoformat()
+            description = (task.raw_description or "Task").splitlines()[0]
+            events.append(
+                f"[{timestamp}] Task {task.id[:8]} {task.status.upper()}: {description[:120]}"
+            )
+    except Exception as exc:
+        logger.warning(f"Failed to build recent task events: {exc}")
+
+    return events
+
+
+def _collect_docker_logs(max_lines: int = 200) -> Optional[str]:
+    """Collect docker logs via CLI or fall back to monitor log files."""
+    max_lines = max(10, min(max_lines, 1000))
+    docker_available = shutil.which("docker") is not None or shutil.which("docker-compose") is not None
+
+    def run_command(command: List[str]) -> Optional[str]:
+        try:
+            result = subprocess.run(
+                command,
+                cwd=str(REPO_ROOT),
+                capture_output=True,
+                text=True,
+                timeout=20,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout
+            logger.debug(f"Docker logs command failed ({result.returncode}): {result.stderr.strip()}")
+        except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+            logger.debug(f"Docker logs command unavailable: {exc}")
+        return None
+
+    if docker_available:
+        compose_file_env = os.environ.get("HEPHAESTUS_DOCKER_COMPOSE_FILE")
+        compose_file = Path(compose_file_env) if compose_file_env else REPO_ROOT / "docker-compose.yml"
+        compose_args: List[str] = ["docker", "compose"]
+        if compose_file.exists():
+            compose_args.extend(["-f", str(compose_file)])
+        compose_args.extend(["logs", "--tail", str(max_lines)])
+
+        logs = run_command(compose_args)
+        if logs:
+            return logs
+
+        # Fallback to docker-compose binary
+        logs = run_command(["docker-compose", "logs", "--tail", str(max_lines)])
+        if logs:
+            return logs
+
+        # Collect individual container logs if compose fails
+        container_names = os.environ.get(
+            "HEPHAESTUS_MONITOR_CONTAINERS",
+            "hephaestus-server,hephaestus-app,hephaestus-qdrant",
+        )
+        combined_logs: List[str] = []
+        for name in [c.strip() for c in container_names.split(",") if c.strip()]:
+            cmd = ["docker", "logs", "--tail", str(max_lines // 3 or max_lines), name]
+            container_log = run_command(cmd)
+            if container_log:
+                combined_logs.append(f"===== {name} =====\n{container_log}")
+        if combined_logs:
+            return "\n".join(combined_logs)
+
+    # Final fallback to monitor log files
+    for log_path in DEFAULT_MONITOR_LOG_PATHS:
+        log_tail = _tail_file(log_path, max_lines)
+        if log_tail:
+            return log_tail
+
+    return None
 def get_single_active_workflow() -> Optional[str]:
     """
     Get the ID of the single active workflow in the system.
@@ -1179,6 +1335,7 @@ async def process_queue():
                     done_definition=refreshed_task.done_definition,
                     phase_id=phase_id_for_agent or refreshed_task.phase_id,  # Use UUID if converted
                     created_by_agent_id=refreshed_task.created_by_agent_id,
+                    workflow_id=refreshed_task.workflow_id,
                 )
                 task_for_agent = temp_task
                 logger.info(f"[QUEUE_AGENT_CREATE] ✓ Created temp task object for agent (phase_id={temp_task.phase_id})")
@@ -1231,16 +1388,42 @@ async def process_queue():
                 task.status = "assigned"
                 task.started_at = datetime.utcnow()
                 session.commit()
+
+                # Update associated ticket status to "building"
+                if task.ticket_id:
+                    try:
+                        ticket = session.query(Ticket).filter_by(id=task.ticket_id).first()
+                        if ticket and ticket.status == 'backlog':
+                            await TicketService.change_status(
+                                ticket_id=task.ticket_id,
+                                agent_id=agent.id,
+                                new_status='building',
+                                comment=f"Agent {agent.id[:8]} started working on task",
+                                commit_sha=None
+                            )
+                            logger.info(f"Updated ticket {task.ticket_id} status to 'building' (task assigned)")
+
+                            # Broadcast ticket status change
+                            await safe_broadcast({
+                                "type": "ticket_status_changed",
+                                "ticket_id": task.ticket_id,
+                                "task_id": task.id,
+                                "agent_id": agent.id,
+                                "old_status": "backlog",
+                                "new_status": "building",
+                            }, context="ticket_status_changed")
+                    except Exception as e:
+                        logger.warning(f"Failed to update ticket status when assigning task: {e}")
         finally:
             session.close()
 
         # Broadcast update
-        await server_state.broadcast_update({
+        await safe_broadcast({
             "type": "task_dequeued",
             "task_id": next_task.id,
             "agent_id": agent.id,
             "description": (next_task.enriched_description or next_task.raw_description)[:200],
-        })
+        }, context="task_dequeued")
 
         logger.info(f"Created agent {agent.id} for queued task {next_task.id}")
 
@@ -1276,7 +1459,7 @@ async def background_queue_processor():
                     logger.info(f"[BACKGROUND_QUEUE] Found {len(pending_tasks)} pending task(s) - queuing for processing...")
                     for task in pending_tasks:
                         # Queue the task (will be enriched and assigned agent)
-                        server_state.queue_service.queue_task(task.id)
+                        server_state.queue_service.enqueue_task(task.id)
                         logger.info(f"[BACKGROUND_QUEUE] Queued pending task {task.id}")
             finally:
                 session.close()
@@ -1762,6 +1945,106 @@ async def update_task_status(
         if task.assigned_agent_id != agent_id:
             raise HTTPException(status_code=403, detail="Agent not authorized for this task")
 
+        # Preload board configuration for ticket auto-moves
+        board_columns: List[str] = []
+        if task.workflow_id:
+            board_config = session.query(BoardConfig).filter_by(workflow_id=task.workflow_id).first()
+            if board_config and board_config.columns:
+                board_columns = [
+                    col["id"] if isinstance(col, dict) else col
+                    for col in board_config.columns
+                ]
+
+        async def move_ticket_to_stage(
+            preferred_statuses: List[str],
+            comment: str,
+            actor_id: Optional[str] = None,
+        ) -> Optional[str]:
+            """Attempt to move associated ticket into the first available preferred status."""
+            if not task.ticket_id or not preferred_statuses or not board_columns:
+                return None
+
+            acting_agent_id = actor_id or agent_id
+            for status in preferred_statuses:
+                if status in board_columns:
+                    try:
+                        result = await TicketService.change_status(
+                            ticket_id=task.ticket_id,
+                            agent_id=acting_agent_id,
+                            new_status=status,
+                            comment=comment,
+                            commit_sha=None
+                        )
+                        logger.info(
+                            f"Auto-updated ticket {task.ticket_id} to '{status}' "
+                            f"based on task {task.id} progress (message: {result.get('message')})"
+                        )
+                        # Broadcast the change explicitly to keep UI responsive
+                        await server_state.broadcast_update({
+                            "type": "ticket_status_changed",
+                            "ticket_id": task.ticket_id,
+                            "task_id": task.id,
+                            "agent_id": acting_agent_id,
+                            "old_status": result.get("old_status"),
+                            "new_status": status,
+                            "blocked": result.get("blocked", False),
+                        })
+                        return status
+                    except Exception as e:
+                        logger.warning(f"Failed to auto-update ticket {task.ticket_id} to {status}: {e}")
+                        return None
+            return None
+
+        # Helper function to map task status to ticket status
+        def map_task_status_to_ticket_status(task_status: str) -> str:
+            """Map task status to appropriate ticket board column."""
+            mapping = {
+                'pending': 'backlog',
+                'queued': 'backlog',
+                'blocked': 'backlog',
+                'assigned': 'building',
+                'in_progress': 'building',
+                'under_review': 'building-done',
+                'validation_in_progress': 'validating',
+                'needs_work': 'building',  # Back to building if validation fails
+                'done': 'done',
+                'failed': 'backlog',  # Move failed tasks back to backlog
+            }
+            return mapping.get(task_status, 'backlog')
+
+        # Update ticket status if task has an associated ticket
+        if task.ticket_id and request.status != 'done':  # 'done' is handled separately below
+            try:
+                new_ticket_status = map_task_status_to_ticket_status(request.status)
+                ticket = session.query(Ticket).filter_by(id=task.ticket_id).first()
+
+                if ticket and ticket.status != new_ticket_status:
+                    old_ticket_status = ticket.status
+
+                    # Update ticket status
+                    await TicketService.change_status(
+                        ticket_id=task.ticket_id,
+                        agent_id=agent_id,
+                        new_status=new_ticket_status,
+                        comment=f"Task status changed to {request.status}",
+                        commit_sha=None
+                    )
+
+                    logger.info(f"Updated ticket {task.ticket_id} status from {old_ticket_status} to {new_ticket_status} (task status: {request.status})")
+
+                    # Broadcast ticket status change
+                    await server_state.broadcast_update({
+                        "type": "ticket_status_changed",
+                        "ticket_id": task.ticket_id,
+                        "task_id": request.task_id,
+                        "agent_id": agent_id,
+                        "old_status": old_ticket_status,
+                        "new_status": new_ticket_status,
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to update ticket status for task {request.task_id}: {e}")
+                # Don't fail the task update if ticket update fails
+
         # 2. Save learnings as memories
         for learning in request.key_learnings:
             # Generate embedding
@@ -1812,6 +2095,12 @@ async def update_task_status(
 
             session.commit()
 
+            # Reflect ticket progress on the Kanban board (e.g., move to "building-done")
+            await move_ticket_to_stage(
+                ["building-done", "validating", "done"],
+                f"Task {request.task_id} implementation complete and awaiting validation"
+            )
+
             # Mark original agent as kept alive for validation (do this immediately)
             agent = session.query(Agent).filter_by(id=agent_id).first()
             if agent:
@@ -1855,6 +2144,12 @@ async def update_task_status(
                         if task:
                             task.status = "validation_in_progress"
                             session.commit()
+
+                            await move_ticket_to_stage(
+                                ["validating", "validating-done", "done"],
+                                f"Validation agent {validator_id[:8]} started reviewing task {request.task_id}",
+                                actor_id=validator_id
+                            )
                             logger.info(f"Task {request.task_id} validation spawned successfully, validator: {validator_id}")
                         else:
                             logger.error(f"Task {request.task_id} not found during validation update")
@@ -1927,6 +2222,16 @@ async def update_task_status(
 
                         logger.info(f"Commit {merge_commit_sha} linked to ticket {task.ticket_id}")
 
+                        # Resolve the ticket automatically
+                        logger.info(f"Auto-resolving ticket {task.ticket_id} for completed task {request.task_id}")
+                        resolve_result = await TicketService.resolve_ticket(
+                            ticket_id=task.ticket_id,
+                            agent_id=agent_id,
+                            resolution_comment=f"Task {request.task_id} completed and merged. {request.summary}",
+                            commit_sha=merge_commit_sha
+                        )
+                        logger.info(f"Ticket {task.ticket_id} resolved. Unblocked {len(resolve_result.get('unblocked_tickets', []))} tickets")
+
                         # Broadcast commit linked to ticket
                         await server_state.broadcast_update({
                             "type": "ticket_commit_linked",
@@ -1936,8 +2241,17 @@ async def update_task_status(
                             "commit_sha": merge_commit_sha
                         })
 
+                        # Broadcast ticket resolved
+                        await server_state.broadcast_update({
+                            "type": "ticket_resolved",
+                            "ticket_id": task.ticket_id,
+                            "task_id": request.task_id,
+                            "agent_id": agent_id,
+                            "unblocked_tickets": resolve_result.get("unblocked_tickets", [])
+                        })
+
                     except Exception as e:
-                        logger.error(f"Failed to auto-link commit to ticket: {e}")
+                        logger.error(f"Failed to auto-link/resolve ticket: {e}")
                         # Don't fail the task if ticket operations fail
 
             # 4. Schedule agent termination and queue processing (only if no validation)
@@ -2277,6 +2591,45 @@ async def give_validation_review(
 
         original_agent_id = task.assigned_agent_id
 
+        board_columns: List[str] = []
+        if task.workflow_id:
+            board_config = session.query(BoardConfig).filter_by(workflow_id=task.workflow_id).first()
+            if board_config and board_config.columns:
+                board_columns = [
+                    col["id"] if isinstance(col, dict) else col
+                    for col in board_config.columns
+                ]
+
+        async def move_ticket_status(preferred_statuses: List[str], comment: str, actor: str) -> Optional[str]:
+            if not task.ticket_id or not preferred_statuses or not board_columns:
+                return None
+
+            for status in preferred_statuses:
+                if status in board_columns:
+                    try:
+                        result = await TicketService.change_status(
+                            ticket_id=task.ticket_id,
+                            agent_id=actor,
+                            new_status=status,
+                            comment=comment,
+                            commit_sha=None
+                        )
+
+                        await server_state.broadcast_update({
+                            "type": "ticket_status_changed",
+                            "ticket_id": task.ticket_id,
+                            "task_id": task.id,
+                            "agent_id": actor,
+                            "old_status": result.get("old_status"),
+                            "new_status": status,
+                            "blocked": result.get("blocked", False),
+                        })
+                        return status
+                    except Exception as e:
+                        logger.warning(f"Failed to auto-update ticket {task.ticket_id} to {status}: {e}")
+                        return None
+            return None
+
         # 3. Create validation review record
         review = ValidationReview(
             id=str(uuid.uuid4()),
@@ -2327,12 +2680,52 @@ async def give_validation_review(
             session.commit()
 
             # Merge agent's work to parent (if using worktrees)
+            merge_commit_sha = None
             if hasattr(server_state, 'worktree_manager') and original_agent_id:
                 try:
                     merge_result = server_state.worktree_manager.merge_to_parent(original_agent_id)
+                    if isinstance(merge_result, dict):
+                        merge_commit_sha = merge_result.get("commit_sha")
                     logger.info(f"Merged validated work: {merge_result}")
                 except Exception as e:
                     logger.warning(f"Failed to merge validated work: {e}")
+
+            if task.ticket_id:
+                await move_ticket_status(
+                    ["validating-done", "done"],
+                    f"Validation passed (iteration {task.validation_iteration})",
+                    actor=agent_id
+                )
+
+                try:
+                    resolve_result = await TicketService.resolve_ticket(
+                        ticket_id=task.ticket_id,
+                        agent_id=agent_id,
+                        resolution_comment=(
+                            f"Validation passed for task {request.task_id}. "
+                            f"{request.feedback or 'Ready for documentation/production.'}"
+                        ),
+                        commit_sha=merge_commit_sha
+                    )
+
+                    if merge_commit_sha:
+                        await server_state.broadcast_update({
+                            "type": "ticket_commit_linked",
+                            "ticket_id": task.ticket_id,
+                            "task_id": request.task_id,
+                            "agent_id": agent_id,
+                            "commit_sha": merge_commit_sha
+                        })
+
+                    await server_state.broadcast_update({
+                        "type": "ticket_resolved",
+                        "ticket_id": task.ticket_id,
+                        "task_id": request.task_id,
+                        "agent_id": agent_id,
+                        "unblocked_tickets": resolve_result.get("unblocked_tickets", [])
+                    })
+                except Exception as e:
+                    logger.error(f"Failed to auto-resolve ticket {task.ticket_id} after validation: {e}")
 
             # Terminate both original and validator agents, then process queue
             async def terminate_both_and_process_queue():
@@ -2362,6 +2755,12 @@ async def give_validation_review(
             task.status = "needs_work"
             task.last_validation_feedback = request.feedback
             session.commit()
+
+            await move_ticket_status(
+                ["building", "backlog"],
+                f"Validation failed - feedback sent (iteration {task.validation_iteration})",
+                actor=agent_id
+            )
 
             # Send feedback to the still-running agent
             from src.validation.validator_agent import send_feedback_to_agent
@@ -4191,6 +4590,80 @@ async def get_queue_status_endpoint():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/monitor/system")
+async def get_monitor_system_endpoint():
+    """Return system resource statistics for the monitoring dashboard."""
+    if not server_state.db_manager:
+        raise HTTPException(status_code=503, detail="Database not initialized")
+
+    try:
+        from sqlalchemy import func
+
+        session = server_state.db_manager.get_session()
+        try:
+            total_agents = session.query(func.count(Agent.id)).scalar() or 0
+            active_agents = (
+                session.query(func.count(Agent.id))
+                .filter(Agent.status.in_(["working", "stuck"]))
+                .scalar()
+                or 0
+            )
+            message_count = session.query(func.count(Memory.id)).scalar() or 0
+            recent_events = _build_recent_task_events(session)
+        finally:
+            session.close()
+
+        queue_status = server_state.queue_service.get_queue_status() if server_state.queue_service else {}
+        resource_usage = _get_resource_usage()
+        uptime_seconds = (datetime.utcnow() - SERVER_START_TIME).total_seconds()
+        status = "OPERATIONAL"
+        queued_tasks = queue_status.get("queued_tasks_count", 0)
+        slots_available = queue_status.get("slots_available", 0)
+
+        if queued_tasks and active_agents == 0:
+            status = "BLOCKED"
+        elif queued_tasks > slots_available:
+            status = "DEGRADED"
+
+        payload = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "cpuUsage": round(resource_usage["cpu"], 2),
+            "memoryUsage": round(resource_usage["memory"], 2),
+            "activeAgents": int(active_agents),
+            "totalAgents": int(total_agents),
+            "messageCount": int(message_count),
+            "uptime": _format_uptime(uptime_seconds),
+            "status": status,
+            "recentEvents": recent_events or ["No recent task activity recorded."],
+        }
+
+        if queue_status:
+            payload["queueStatus"] = queue_status
+
+        return payload
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to load monitor data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/monitor/docker-logs")
+async def get_monitor_docker_logs_endpoint(lines: int = 200):
+    """Provide recent docker logs for the monitoring dashboard."""
+    try:
+        logs = await asyncio.to_thread(_collect_docker_logs, lines)
+        if not logs:
+            raise HTTPException(status_code=503, detail="No docker logs available")
+
+        return {"logs": logs}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to gather docker logs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/agent_status")
 async def get_agent_status(
     agent_id: Optional[str] = None,
@@ -4332,6 +4805,51 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat(),
         "version": "1.0.0",
     }
+
+
+@app.get("/api/tmux_session_status/{session_name}")
+async def check_tmux_session(session_name: str):
+    """Check if a tmux session exists and is healthy.
+
+    This endpoint allows the monitoring system to check tmux sessions
+    without direct access to the tmux server, solving cross-container
+    communication issues.
+
+    Args:
+        session_name: Name of the tmux session to check
+
+    Returns:
+        Dictionary with session status information
+    """
+    try:
+        # Check if session exists
+        has_session = server_state.agent_manager.tmux_server.has_session(session_name)
+
+        status = {
+            "exists": has_session,
+            "session_name": session_name,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+        if has_session:
+            # Try to get output to verify it's responsive
+            try:
+                output = server_state.agent_manager.get_agent_output(session_name, lines=5)
+                status["responsive"] = bool(output)
+                status["has_output"] = len(output) > 0 if output else False
+            except Exception as e:
+                status["responsive"] = False
+                status["error"] = str(e)
+
+        return status
+    except Exception as e:
+        logger.error(f"Error checking tmux session {session_name}: {e}")
+        return {
+            "exists": False,
+            "session_name": session_name,
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat(),
+        }
 
 
 # OAuth endpoints for MCP compatibility with Dynamic Client Registration
@@ -4567,7 +5085,7 @@ async def list_tools():
                     "properties": {
                         "title": {"type": "string", "description": "Ticket title"},
                         "description": {"type": "string", "description": "Detailed description"},
-                        "ticket_type": {"type": "string", "enum": ["bug", "feature", "improvement", "task", "spike"], "description": "Type of ticket"},
+                        "ticket_type": {"type": "string", "enum": ["component", "bug", "design-revision", "documentation"], "description": "Type of ticket"},
                         "priority": {"type": "string", "enum": ["low", "medium", "high", "critical"], "description": "Priority level"},
                         "tags": {"type": "array", "items": {"type": "string"}, "description": "Tags for categorization"},
                         "blocked_by_ticket_ids": {"type": "array", "items": {"type": "string"}, "description": "IDs of blocking tickets"}
@@ -4678,12 +5196,41 @@ async def execute_tool(request: Dict[str, Any]):
         # Update ticket status
         from src.services.ticket_service import TicketService
 
-        result = await TicketService.change_ticket_status(
-            ticket_id=arguments.get("ticket_id"),
-            new_status=arguments.get("new_status"),
-            agent_id=arguments.get("agent_id", "mcp-claude")
-        )
-        return {"success": True, "result": result}
+        ticket_id = arguments.get("ticket_id")
+        new_status = arguments.get("new_status")
+        agent_id = arguments.get("agent_id", "mcp-claude")
+        comment = arguments.get("comment", "Status updated by agent")  # REQUIRED parameter
+        commit_sha = arguments.get("commit_sha")
+
+        # Validate required fields
+        if not ticket_id:
+            raise HTTPException(status_code=400, detail="ticket_id is required")
+        if not new_status:
+            raise HTTPException(status_code=400, detail="new_status is required")
+
+        try:
+            result = await TicketService.change_status(
+                ticket_id=ticket_id,
+                agent_id=agent_id,
+                new_status=new_status,
+                comment=comment,  # NOW PROPERLY INCLUDED
+                commit_sha=commit_sha
+            )
+
+            # Handle blocked ticket case
+            if not result.get("success", False):
+                logger.warning(f"Ticket {ticket_id} status change blocked: {result.get('message')}")
+                return {"success": False, "error": result.get("message", "Unknown error"), "result": result}
+
+            logger.info(f"Ticket {ticket_id} status updated from {result.get('old_status')} to {new_status}")
+            return {"success": True, "result": result}
+
+        except ValueError as e:
+            logger.error(f"Validation error updating ticket {ticket_id}: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error(f"Failed to update ticket {ticket_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
     else:
         raise HTTPException(status_code=400, detail=f"Unknown tool: {tool_name}")
 

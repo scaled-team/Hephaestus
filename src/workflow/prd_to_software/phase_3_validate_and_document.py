@@ -21,6 +21,7 @@ The output is either Phase 2 fix tasks (if critical bugs) OR complete documentat
 
 Generic for any testing framework and documentation type.""",
     done_definitions=[
+        "✅ Ticket status updated to 'validating' when starting Phase 3 work (via MCP update_ticket_status)",
         "Test instructions read from run_instructions/ (if available)",
         "ALL relevant tests executed (unit/integration/e2e as appropriate)",
         "Bugs fixed via Task tool (or direct tiny fixes), fixes documented in test report",
@@ -29,6 +30,7 @@ Generic for any testing framework and documentation type.""",
         "IF fundamental design issues exist: Phase 2 redesign task created, ticket moved to 'building', NO documentation written",
         "IF all tests pass: Documentation created and complete (README, API docs, usage guide)",
         "IF all tests pass: Usage examples provided and tested",
+        "IF all tests pass: ✅ Ticket status updated to 'done' when validation complete (via MCP update_ticket_status)",
         "IF all tests pass: Ticket RESOLVED and moved to 'done' status",
         "Test execution and documentation status saved to memory",
     ],
@@ -168,12 +170,18 @@ This is CRITICAL for workflow tracking. If you don't do this:
 
 ```python
 # 🚨 MANDATORY: Move ticket from "building-done" to "validating" status
-mcp__hephaestus__change_ticket_status({
+# 🎯 This updates the Kanban board so the team knows validation has started
+mcp__hephaestus__update_ticket_status({
     "ticket_id": "[extracted ticket ID from STEP 0A]",
     "agent_id": "[YOUR ACTUAL AGENT ID]",
     "new_status": "validating",
-    "comment": "Starting validation per ticket scope. Running comprehensive test suite. Ticket moved from 'building-done' to 'validating'."
+    "comment": "Phase 3: Starting validation per ticket scope. Running comprehensive test suite. Ticket moved from 'building-done' to 'validating'."
 })
+
+✅ **After this call:**
+- Kanban board updates to show ticket in the "validating" column
+- Team knows validation has started
+- Real-time progress visibility for all team members
 ```
 
 **✅ Ticket status is now "validating". You can proceed to run tests.**
@@ -1086,12 +1094,20 @@ STEP 12: MOVE TICKET TO DONE AND RESOLVE IT
 
 First, move ticket to "done" status:
 ```python
-mcp__hephaestus__change_ticket_status({
+# Update ticket status to "done" - Component is complete!
+# 🎯 This signals to the team that validation is complete and component is production-ready
+mcp__hephaestus__update_ticket_status({
     "ticket_id": my_ticket_id,
     "agent_id": "[YOUR ACTUAL AGENT ID]",
     "new_status": "done",
-    "comment": "[Component] COMPLETE! All tests passing (100% success rate after fixing small bugs). Documentation written and tested. Ready for production. Ticket moving from 'validating-done' to 'done'."
+    "comment": "Phase 3: [Component] COMPLETE! All tests passing (100% success rate after fixing small bugs). Documentation written and tested. Ready for production. Ticket moving from 'validating-done' to 'done'."
 })
+
+✅ **After this call:**
+- Kanban board updates to show ticket in the "done" column
+- Team knows validation is complete and component is production-ready
+- Component is officially release-ready
+- Real-time progress visibility updated
 ```
 
 Then, resolve the ticket:

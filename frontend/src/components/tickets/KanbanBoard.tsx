@@ -24,7 +24,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
   const queryClient = useQueryClient();
   const { subscribe } = useWebSocket();
 
-  // Listen for ticket approval/rejection/deletion events and refetch tickets
+  // Listen for ticket approval/rejection/deletion/resolution events and refetch tickets
   useEffect(() => {
     const unsubscribeApproved = subscribe('ticket_approved', () => {
       queryClient.invalidateQueries({ queryKey: ['tickets', workflowId] });
@@ -44,10 +44,24 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workflowId, onNavigateToSearc
       queryClient.invalidateQueries({ queryKey: ['pendingReviewCount'] });
     });
 
+    const unsubscribeResolved = subscribe('ticket_resolved', () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets', workflowId] });
+      queryClient.invalidateQueries({ queryKey: ['ticketStats', workflowId] });
+      queryClient.invalidateQueries({ queryKey: ['pendingReviewCount'] });
+    });
+
+    // Listen for ticket status changes (when agents work on tasks and move through phases)
+    const unsubscribeStatusChanged = subscribe('ticket_status_changed', (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['tickets', workflowId] });
+      queryClient.invalidateQueries({ queryKey: ['ticketStats', workflowId] });
+    });
+
     return () => {
       unsubscribeApproved();
       unsubscribeRejected();
       unsubscribeDeleted();
+      unsubscribeResolved();
+      unsubscribeStatusChanged();
     };
   }, [subscribe, queryClient, workflowId]);
 

@@ -359,7 +359,7 @@ def main():
             monitoring_interval=monitoring_interval,
 
             # Agent Configuration
-            default_cli_tool="claude",  # Options: "claude", "opencode", "codex", "droid"
+            default_cli_tool="opencode",  # Options: "opencode", "claude", "codex", "droid"
 
             # Git Configuration
             main_repo_path=project_path,

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Activity, Bot, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OVERVIEW_CARD, OVERVIEW_SURFACE } from './styles';
 
 interface SystemHealthProps {
   systemHealth?: {
@@ -17,15 +18,15 @@ interface SystemHealthProps {
 export default function SystemHealthCard({ systemHealth }: SystemHealthProps) {
   if (!systemHealth) {
     return (
-      <Card className="h-full">
+      <Card className={cn(OVERVIEW_CARD)}>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Activity className="w-5 h-5 mr-2 text-blue-600" />
+            <Activity className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
             System Health
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-gray-500 text-center py-8">
+          <div className="text-gray-500 dark:text-gray-400 text-center py-8">
             No data available
           </div>
         </CardContent>
@@ -38,18 +39,18 @@ export default function SystemHealthCard({ systemHealth }: SystemHealthProps) {
 
   const getHealthStatus = () => {
     if (coherencePercent >= 80 && alignmentPercent >= 80) {
-      return { icon: CheckCircle, text: "All systems nominal", color: "text-green-600" };
+      return { icon: CheckCircle, text: "All systems nominal", color: "text-green-600 dark:text-green-400" };
     } else if (coherencePercent >= 50 && alignmentPercent >= 50) {
-      return { icon: AlertCircle, text: "Minor issues detected", color: "text-yellow-600" };
+      return { icon: AlertCircle, text: "Minor issues detected", color: "text-yellow-600 dark:text-yellow-400" };
     }
-    return { icon: AlertCircle, text: "Attention required", color: "text-red-600" };
+    return { icon: AlertCircle, text: "Attention required", color: "text-red-600 dark:text-red-400" };
   };
 
   const healthStatus = getHealthStatus();
   const StatusIcon = healthStatus.icon;
 
   return (
-    <Card className="h-full">
+    <Card className={cn(OVERVIEW_CARD)}>
       <CardHeader>
         <CardTitle className="flex items-center">
           <Activity className="w-5 h-5 mr-2 text-blue-600" />
@@ -110,24 +111,24 @@ export default function SystemHealthCard({ systemHealth }: SystemHealthProps) {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
+          <div className={cn(OVERVIEW_SURFACE, "text-center p-3 shadow-inner/40 dark:shadow-none")}>
             <div className="flex items-center justify-center mb-1">
-              <Bot className="w-4 h-4 text-blue-600 mr-1" />
-              <span className="text-2xl font-bold">{systemHealth.active_agents}</span>
+              <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400 mr-1" />
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">{systemHealth.active_agents}</span>
             </div>
-            <div className="text-xs text-gray-600">Active Agents</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">Active Agents</div>
           </div>
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
+          <div className={cn(OVERVIEW_SURFACE, "text-center p-3 shadow-inner/40 dark:shadow-none")}>
             <div className="flex items-center justify-center mb-1">
-              <TrendingUp className="w-4 h-4 text-blue-600 mr-1" />
-              <span className="text-2xl font-bold">{systemHealth.running_tasks}</span>
+              <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400 mr-1" />
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">{systemHealth.running_tasks}</span>
             </div>
-            <div className="text-xs text-gray-600">Running Tasks</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">Running Tasks</div>
           </div>
         </div>
 
         {/* Status */}
-        <div className={cn("flex items-center p-3 rounded-lg bg-gray-50", healthStatus.color)}>
+        <div className={cn(OVERVIEW_SURFACE, "flex items-center p-3 gap-2", healthStatus.color)}>
           <StatusIcon className="w-5 h-5 mr-2" />
           <span className="font-medium">{healthStatus.text}</span>
         </div>

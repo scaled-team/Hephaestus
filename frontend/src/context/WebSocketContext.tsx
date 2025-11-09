@@ -7,7 +7,7 @@ interface WebSocketContextType {
   lastMessage: WebSocketMessage | null;
   lastUpdate: Date;
   subscribe: (event: string, callback: (data: any) => void) => () => void;
-  sendMessage: (type: string, data: any) => void;
+  sendMessage: (type: string, data: any) => Promise<void>;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -44,12 +44,21 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   }, []);
 
   const sendMessage = useCallback((type: string, data: any) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      const message = JSON.stringify({ type, ...data });
-      ws.send(message);
-    } else {
-      toast.error('WebSocket not connected', { duration: 2000 });
-    }
+    return new Promise<void>((resolve, reject) => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          const message = JSON.stringify({ type, ...data });
+          ws.send(message);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      } else {
+        const error = new Error('WebSocket not connected');
+        toast.error('WebSocket not connected', { duration: 2000 });
+        reject(error);
+      }
+    });
   }, [ws]);
 
   useEffect(() => {

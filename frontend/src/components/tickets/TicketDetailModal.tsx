@@ -47,7 +47,7 @@ const ClickableAgentId: React.FC<{ agentId: string; onClick: (agentId: string) =
     <button
       onClick={() => onClick(agentId)}
       className={cn(
-        'font-medium font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors',
+        'font-medium font-mono text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer transition-colors',
         className
       )}
       title={`View agent details: ${agentId}`}
@@ -72,15 +72,15 @@ const BlockedByTicketItem: React.FC<{
 
   if (isLoading) {
     return (
-      <div className="p-2 bg-white rounded border border-red-200 text-sm animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      <div className="p-2 bg-white dark:bg-gray-700 rounded border border-red-200 dark:border-red-800 text-sm animate-pulse">
+        <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
       </div>
     );
   }
 
   if (!ticket) {
     return (
-      <div className="p-2 bg-white rounded border border-red-200 text-sm font-mono text-gray-500">
+      <div className="p-2 bg-white dark:bg-gray-700 rounded border border-red-200 dark:border-red-800 text-sm font-mono text-gray-500 dark:text-gray-400">
         {ticketId}
       </div>
     );
@@ -93,23 +93,23 @@ const BlockedByTicketItem: React.FC<{
   return (
     <button
       onClick={() => onClick(ticketId)}
-      className="w-full p-2 bg-white rounded border border-red-200 text-left hover:bg-red-50 hover:border-red-300 transition-colors cursor-pointer group"
+      className="w-full p-2 bg-white dark:bg-gray-700 rounded border border-red-200 dark:border-red-800 text-left hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700 transition-colors cursor-pointer group"
       title={tooltipText}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-mono text-gray-500">{ticketId}</span>
+        <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{ticketId}</span>
         <div className="flex items-center space-x-1">
           {ticket.is_blocked && (
-            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">
+            <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs rounded">
               <Lock className="w-3 h-3 inline" />
             </span>
           )}
-          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-xs rounded capitalize">
+          <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded capitalize">
             {ticket.ticket_type}
           </span>
         </div>
       </div>
-      <div className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+      <div className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
         {ticket.title}
       </div>
     </button>
@@ -129,20 +129,20 @@ const RelatedTaskItem: React.FC<{
 
   if (isLoading) {
     return (
-      <div className="p-3 bg-white rounded-lg border border-gray-200 animate-pulse">
+      <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 animate-pulse">
         <div className="flex items-center space-x-2 mb-2">
-          <div className="h-5 w-16 bg-gray-200 rounded"></div>
-          <div className="h-4 w-24 bg-gray-200 rounded"></div>
+          <div className="h-5 w-16 bg-gray-200 dark:bg-gray-600 rounded"></div>
+          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-600 rounded"></div>
         </div>
-        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+        <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/2"></div>
       </div>
     );
   }
 
   if (!task) {
     return (
-      <div className="p-3 bg-white rounded-lg border border-gray-200 text-sm font-mono text-gray-500">
+      <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-mono text-gray-500 dark:text-gray-400">
         {taskId}
       </div>
     );
@@ -152,18 +152,18 @@ const RelatedTaskItem: React.FC<{
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'done':
-        return 'bg-green-100 text-green-700 border-green-200';
+        return 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
+        return 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700';
       case 'failed':
-        return 'bg-red-100 text-red-700 border-red-200';
+        return 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700';
       case 'blocked':
-        return 'bg-orange-100 text-orange-700 border-orange-200';
+        return 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700';
       case 'pending':
       case 'queued':
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600';
     }
   };
 
@@ -172,7 +172,7 @@ const RelatedTaskItem: React.FC<{
   return (
     <button
       onClick={() => onClick(taskId)}
-      className="w-full p-3 bg-white rounded-lg border border-gray-200 text-left hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer group"
+      className="w-full p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm transition-all cursor-pointer group"
     >
       {/* Header: Phase Badge + Task ID */}
       <div className="flex items-center justify-between mb-2">
@@ -184,19 +184,19 @@ const RelatedTaskItem: React.FC<{
               className="flex-shrink-0"
             />
           ) : (
-            <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs rounded font-medium">
+            <span className="px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs rounded font-medium">
               No Phase
             </span>
           )}
-          <span className="text-xs font-mono text-gray-500 group-hover:text-blue-600 transition-colors">
+          <span className="text-xs font-mono text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {taskId}
           </span>
         </div>
-        <ExternalLink className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ExternalLink className="w-3 h-3 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
 
       {/* Description */}
-      <div className="text-sm font-medium text-gray-900 line-clamp-2 mb-2 group-hover:text-blue-700 transition-colors">
+      <div className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
         {task.description}
       </div>
 
@@ -211,9 +211,9 @@ const RelatedTaskItem: React.FC<{
         {task.priority && (
           <span className={cn(
             'px-2 py-0.5 text-xs rounded capitalize',
-            task.priority === 'high' && 'bg-red-50 text-red-600',
-            task.priority === 'medium' && 'bg-yellow-50 text-yellow-600',
-            task.priority === 'low' && 'bg-gray-50 text-gray-600'
+            task.priority === 'high' && 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
+            task.priority === 'medium' && 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400',
+            task.priority === 'low' && 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
           )}>
             {task.priority}
           </span>
@@ -335,37 +335,37 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-lg shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="px-6 py-4 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 dark:from-blue-900/20 to-indigo-50 dark:to-indigo-900/20">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <span className="text-sm font-mono text-gray-600">
+                    <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
                       {ticket.id}
                     </span>
                     {ticket.is_blocked && (
-                      <span className="flex items-center px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
+                      <span className="flex items-center px-2 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs rounded">
                         <Lock className="w-3 h-3 mr-1" />
                         Blocked
                       </span>
                     )}
                     {ticket.is_resolved && (
-                      <span className="flex items-center px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                      <span className="flex items-center px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded">
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Resolved
                       </span>
                     )}
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900">{ticket.title}</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{ticket.title}</h2>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
@@ -392,7 +392,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                   <div>
                     <button
                       onClick={() => toggleSection('description')}
-                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-3"
+                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 dark:text-white mb-3"
                     >
                       <span>Description</span>
                       {expandedSections.description ? (
@@ -403,13 +403,13 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                     </button>
 
                     {expandedSections.description && (
-                      <div className="bg-gray-50 rounded-lg p-4 border">
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border dark:border-gray-600">
                         {isEditingDescription ? (
                           <div>
                             <textarea
                               value={editedDescription}
                               onChange={(e) => setEditedDescription(e.target.value)}
-                              className="w-full h-48 p-3 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full h-48 p-3 border dark:border-gray-600 dark:bg-gray-600 dark:text-white rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
                               placeholder="Enter description..."
                             />
                             <div className="flex space-x-2 mt-2">
@@ -421,7 +421,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                               </button>
                               <button
                                 onClick={() => setIsEditingDescription(false)}
-                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500"
                               >
                                 Cancel
                               </button>
@@ -429,16 +429,16 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                           </div>
                         ) : (
                           <div className="relative group">
-                            <div className="prose prose-sm max-w-none">
+                            <div className="prose dark:prose-invert prose-sm max-w-none">
                               <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                                 {ticket.description}
                               </ReactMarkdown>
                             </div>
                             <button
                               onClick={startEditingDescription}
-                              className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-lg shadow hover:bg-gray-50"
+                              className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-600 rounded-lg shadow hover:bg-gray-50 dark:hover:bg-gray-500"
                             >
-                              <Edit2 className="w-4 h-4 text-gray-600" />
+                              <Edit2 className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                             </button>
                           </div>
                         )}
@@ -450,12 +450,12 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                   <div>
                     <button
                       onClick={() => toggleSection('relatedTasks')}
-                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-3"
+                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 dark:text-white mb-3"
                     >
                       <span className="flex items-center">
                         Related Tasks
                         {ticket.related_task_ids && ticket.related_task_ids.length > 0 && (
-                          <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                          <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded-full font-medium">
                             {ticket.related_task_ids.length}
                           </span>
                         )}
@@ -470,9 +470,9 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                     {expandedSections.relatedTasks && (
                       <div>
                         {!ticket.related_task_ids || ticket.related_task_ids.length === 0 ? (
-                          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
-                            <p className="text-sm text-gray-500">No related tasks yet</p>
-                            <p className="text-xs text-gray-400 mt-1">
+                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600 text-center">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">No related tasks yet</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                               Tasks will appear here when they reference this ticket
                             </p>
                           </div>
@@ -495,7 +495,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                   <div>
                     <button
                       onClick={() => toggleSection('activity')}
-                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-3"
+                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 dark:text-white mb-3"
                     >
                       <span>Activity Timeline</span>
                       {expandedSections.activity ? (
@@ -508,44 +508,44 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                     {expandedSections.activity && (
                       <div className="space-y-3 max-h-96 overflow-y-auto">
                         {history.length === 0 ? (
-                          <p className="text-sm text-gray-500">No activity yet</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">No activity yet</p>
                         ) : (
                           history.map((entry) => (
                             <div
                               key={entry.id}
-                              className="flex space-x-3 p-3 bg-gray-50 rounded-lg border"
+                              className="flex space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600"
                             >
                               <div className="flex-shrink-0">
                                 {entry.change_type === 'created' && (
-                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                    <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                   </div>
                                 )}
                                 {entry.change_type === 'status_changed' && (
-                                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                                    <AlertCircle className="w-4 h-4 text-purple-600" />
+                                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                                    <AlertCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                   </div>
                                 )}
                                 {entry.change_type === 'commented' && (
-                                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                    <MessageCircle className="w-4 h-4 text-green-600" />
+                                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                                    <MessageCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                                   </div>
                                 )}
                                 {entry.change_type === 'commit_linked' && (
-                                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                    <GitCommit className="w-4 h-4 text-orange-600" />
+                                  <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                                    <GitCommit className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                                   </div>
                                 )}
                               </div>
                               <div className="flex-1">
-                                <p className="text-sm text-gray-900">{entry.change_description}</p>
+                                <p className="text-sm text-gray-900 dark:text-white">{entry.change_description}</p>
                                 <div className="flex items-center space-x-2 mt-1 text-xs">
                                   <ClickableAgentId
                                     agentId={entry.agent_id}
                                     onClick={setSelectedAgentId}
                                   />
-                                  <span className="text-gray-500">•</span>
-                                  <span className="text-gray-500">{formatDistanceToNow(new Date(entry.changed_at), { addSuffix: true })}</span>
+                                  <span className="text-gray-500 dark:text-gray-400">•</span>
+                                  <span className="text-gray-500 dark:text-gray-400">{formatDistanceToNow(new Date(entry.changed_at), { addSuffix: true })}</span>
                                 </div>
                               </div>
                             </div>
@@ -559,7 +559,7 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                   <div>
                     <button
                       onClick={() => toggleSection('comments')}
-                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-3"
+                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 dark:text-white mb-3"
                     >
                       <span>Comments ({comments.length})</span>
                       {expandedSections.comments ? (
@@ -574,32 +574,32 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                         {/* Comment List */}
                         <div className="space-y-3 max-h-64 overflow-y-auto">
                           {comments.map((comment) => (
-                            <div key={comment.id} className="p-3 bg-gray-50 rounded-lg border">
+                            <div key={comment.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600">
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center space-x-2">
-                                  <User className="w-4 h-4 text-gray-600" />
+                                  <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                   <ClickableAgentId
                                     agentId={comment.agent_id}
                                     onClick={setSelectedAgentId}
                                     className="text-sm"
                                   />
                                 </div>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.comment_text}</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.comment_text}</p>
                             </div>
                           ))}
                         </div>
 
                         {/* Add Comment Form */}
-                        <div className="border-t pt-4">
+                        <div className="border-t dark:border-gray-600 pt-4">
                           <textarea
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
                             placeholder="Add a comment..."
-                            className="w-full px-3 py-2 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border dark:border-gray-600 dark:bg-gray-600 dark:text-white rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
                             rows={3}
                           />
                           <div className="flex justify-end mt-2">
@@ -621,47 +621,47 @@ const TicketDetailModal: React.FC<TicketDetailModalProps> = ({ ticketId, onClose
                 {/* RIGHT PANEL - 1/3 width */}
                 <div className="space-y-6">
                   {/* Details Section */}
-                  <div className="bg-gray-50 rounded-lg p-4 border">
-                    <h3 className="font-semibold text-gray-900 mb-3">Details</h3>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border dark:border-gray-600">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Details</h3>
                     <div className="space-y-3 text-sm">
                       <div>
-                        <div className="text-gray-600 mb-1">Type</div>
-                        <div className="font-medium capitalize">{ticket.ticket_type}</div>
+                        <div className="text-gray-600 dark:text-gray-400 mb-1">Type</div>
+                        <div className="font-medium capitalize text-gray-900 dark:text-white">{ticket.ticket_type}</div>
                       </div>
                       <div>
-                        <div className="text-gray-600 mb-1">Priority</div>
+                        <div className="text-gray-600 dark:text-gray-400 mb-1">Priority</div>
                         <div className={cn(
                           'font-medium capitalize',
-                          ticket.priority === 'critical' && 'text-red-600',
-                          ticket.priority === 'high' && 'text-orange-600',
-                          ticket.priority === 'medium' && 'text-yellow-600',
-                          ticket.priority === 'low' && 'text-gray-600'
+                          ticket.priority === 'critical' && 'text-red-600 dark:text-red-400',
+                          ticket.priority === 'high' && 'text-orange-600 dark:text-orange-400',
+                          ticket.priority === 'medium' && 'text-yellow-600 dark:text-yellow-400',
+                          ticket.priority === 'low' && 'text-gray-600 dark:text-gray-400'
                         )}>
                           {ticket.priority}
                         </div>
                       </div>
                       <div>
-                        <div className="text-gray-600 mb-1">Status</div>
-                        <div className="font-medium capitalize">{ticket.status}</div>
+                        <div className="text-gray-600 dark:text-gray-400 mb-1">Status</div>
+                        <div className="font-medium capitalize text-gray-900 dark:text-white">{ticket.status}</div>
                       </div>
                       <div>
-                        <div className="text-gray-600 mb-1">Created</div>
-                        <div className="font-medium">
+                        <div className="text-gray-600 dark:text-gray-400 mb-1">Created</div>
+                        <div className="font-medium text-gray-900 dark:text-white">
                           {format(new Date(ticket.created_at), 'MMM d, yyyy HH:mm')}
                         </div>
                       </div>
                       {ticket.started_at && (
                         <div>
-                          <div className="text-gray-600 mb-1">Started</div>
-                          <div className="font-medium">
+                          <div className="text-gray-600 dark:text-gray-400 mb-1">Started</div>
+                          <div className="font-medium text-gray-900 dark:text-white">
                             {format(new Date(ticket.started_at), 'MMM d, yyyy HH:mm')}
                           </div>
                         </div>
                       )}
                       {ticket.completed_at && (
                         <div>
-                          <div className="text-gray-600 mb-1">Completed</div>
-                          <div className="font-medium">
+                          <div className="text-gray-600 dark:text-gray-400 mb-1">Completed</div>
+                          <div className="font-medium text-gray-900 dark:text-white">
                             {format(new Date(ticket.completed_at), 'MMM d, yyyy HH:mm')}
                           </div>
                         </div>

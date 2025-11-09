@@ -68,10 +68,11 @@ class Config:
 
         # Agent settings
         agents = config.get('agents', {})
-        self.default_cli_tool = agents.get('default_cli_tool', 'claude')
+        self.default_cli_tool = agents.get('default_cli_tool', 'opencode')
         self.cli_model = agents.get('cli_model', 'sonnet')
         self.glm_api_token_env = agents.get('glm_api_token_env', 'GLM_API_TOKEN')
         self.tmux_session_prefix = agents.get('tmux_session_prefix', 'agent')
+        self.tmux_socket_path = agents.get('tmux_socket_path', '/tmp/tmux-shared/default')
         self.agent_health_check_interval = agents.get('health_check_interval', 60)
         self.max_health_check_failures = agents.get('max_health_failures', 3)
         self.agent_termination_delay = agents.get('termination_delay', 5)
@@ -90,6 +91,8 @@ class Config:
         self.log_format = monitoring.get('log_format', 'json')
         self.stuck_agent_threshold = monitoring.get('stuck_agent_threshold', 300)
         self.guardian_min_agent_age_seconds = monitoring.get('guardian_min_agent_age_seconds', 60)
+        self.long_running_agent_seconds = monitoring.get('long_running_agent_seconds', 7200)
+        self.cleanup_interval_minutes = monitoring.get('cleanup_interval_minutes', 2)
 
         # MCP settings
         mcp = config.get('mcp', {})

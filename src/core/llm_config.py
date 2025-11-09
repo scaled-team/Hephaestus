@@ -275,7 +275,7 @@ class SimpleConfig:
     @property
     def default_cli_tool(self) -> str:
         """Get default CLI tool."""
-        return self.get('agents.default_cli_tool', 'claude')
+        return self.get('agents.default_cli_tool', 'opencode')
 
 
 # Global configuration instance

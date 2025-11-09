@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Users, Clock, Zap, AlertCircle, ChevronRight } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { OVERVIEW_CARD, OVERVIEW_SURFACE } from '@/components/overview/styles';
 
 const QueueStatusWidget: React.FC = () => {
   const { data: queueStatus, isLoading } = useQuery({
@@ -14,10 +16,10 @@ const QueueStatusWidget: React.FC = () => {
 
   if (isLoading || !queueStatus) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
+      <div className={cn(OVERVIEW_CARD, "p-6")}>
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-gray-200/70 dark:bg-white/10 rounded w-1/3"></div>
+          <div className="h-20 bg-gray-200/70 dark:bg-white/10 rounded"></div>
         </div>
       </div>
     );
@@ -42,10 +44,10 @@ const QueueStatusWidget: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-lg shadow-md overflow-hidden"
+      className={cn(OVERVIEW_CARD, "overflow-hidden p-0")}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4">
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-700/90 dark:from-indigo-500/80 dark:to-purple-700/70 p-4">
         <div className="flex items-center justify-between text-white">
           <div className="flex items-center space-x-2">
             <Users className="w-5 h-5" />
@@ -70,14 +72,14 @@ const QueueStatusWidget: React.FC = () => {
         {/* Utilization Bar */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Active Agents
             </span>
             <span className={`text-sm font-bold ${getUtilizationTextColor(utilizationPercentage)}`}>
               {queueStatus.active_agents} / {queueStatus.max_concurrent_agents}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-gray-200/70 dark:bg-white/10 rounded-full h-3 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${utilizationPercentage}%` }}
@@ -85,7 +87,7 @@ const QueueStatusWidget: React.FC = () => {
               className={`h-3 rounded-full ${getUtilizationColor(utilizationPercentage)} transition-all`}
             />
           </div>
-          <div className="flex items-center justify-between mt-1 text-xs text-gray-500">
+          <div className="flex items-center justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
             <span>{utilizationPercentage.toFixed(0)}% utilized</span>
             <span>{queueStatus.slots_available} slots available</span>
           </div>
@@ -93,7 +95,7 @@ const QueueStatusWidget: React.FC = () => {
 
         {/* Queued Tasks Summary */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
+          <div className={cn(OVERVIEW_SURFACE, "p-4 border-blue-200/70 dark:border-blue-900/40 bg-blue-50/80 dark:bg-blue-900/20")}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-blue-600 font-medium">Queued Tasks</p>
@@ -104,7 +106,7 @@ const QueueStatusWidget: React.FC = () => {
               <Clock className="w-8 h-8 text-blue-400" />
             </div>
           </div>
-          <div className="bg-purple-50 rounded-lg p-4">
+          <div className={cn(OVERVIEW_SURFACE, "p-4 border-purple-200/70 dark:border-purple-900/40 bg-purple-50/80 dark:bg-purple-900/20")}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-purple-600 font-medium">Priority Boosted</p>
@@ -120,7 +122,7 @@ const QueueStatusWidget: React.FC = () => {
         {/* Queued Tasks List */}
         {queueStatus.queued_tasks.length > 0 && (
           <div className="mt-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center">
               <ChevronRight className="w-4 h-4 mr-1" />
               Queue (Next {Math.min(5, queueStatus.queued_tasks.length)})
             </h4>
@@ -131,15 +133,17 @@ const QueueStatusWidget: React.FC = () => {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`p-3 rounded-lg border ${
+                  className={cn(
+                    OVERVIEW_SURFACE,
+                    "p-3 border",
                     task.priority_boosted
-                      ? 'bg-purple-50 border-purple-300'
+                      ? 'border-purple-300/70 dark:border-purple-800/60 bg-purple-50/70 dark:bg-purple-900/30'
                       : task.priority === 'high'
-                      ? 'bg-red-50 border-red-200'
+                      ? 'border-red-200/70 dark:border-red-800/50 bg-red-50/70 dark:bg-red-900/30'
                       : task.priority === 'medium'
-                      ? 'bg-yellow-50 border-yellow-200'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
+                      ? 'border-yellow-200/70 dark:border-yellow-800/50 bg-yellow-50/70 dark:bg-yellow-900/30'
+                      : 'border-gray-200/70 dark:border-white/10'
+                  )}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -164,15 +168,15 @@ const QueueStatusWidget: React.FC = () => {
                             task.priority
                           )}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           Position: {task.queue_position}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700 line-clamp-2">
+                      <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-2">
                         {task.description}
                       </p>
                       {task.queued_at && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Queued {formatDistanceToNow(new Date(task.queued_at), { addSuffix: true })}
                         </p>
                       )}
@@ -182,7 +186,7 @@ const QueueStatusWidget: React.FC = () => {
               ))}
             </div>
             {queueStatus.queued_tasks.length > 5 && (
-              <p className="text-xs text-gray-500 mt-2 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
                 + {queueStatus.queued_tasks.length - 5} more tasks in queue
               </p>
             )}
@@ -192,8 +196,8 @@ const QueueStatusWidget: React.FC = () => {
         {/* Empty State */}
         {queueStatus.queued_tasks.length === 0 && (
           <div className="text-center py-6">
-            <Clock className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">No tasks in queue</p>
+            <Clock className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">No tasks in queue</p>
           </div>
         )}
       </div>

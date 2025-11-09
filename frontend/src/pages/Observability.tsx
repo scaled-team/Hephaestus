@@ -2,10 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Monitor,
-  Download,
-  Wifi,
-  WifiOff
+  Monitor
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { useWebSocket } from '@/context/WebSocketContext';
@@ -44,6 +41,8 @@ const DEFAULT_LAYOUTS: Record<LayoutPreset, Omit<GridLayout, 'panels'>> = {
   'custom': { cols: 4, rows: 4 },
 };
 
+const OUTPUT_POLL_INTERVAL = 5000;
+
 const Observability: React.FC = () => {
   // State management
   const [selectedLayout, setSelectedLayout] = useState<LayoutPreset>('2x2');
@@ -59,6 +58,7 @@ const Observability: React.FC = () => {
   const [showCustomLayoutDialog, setShowCustomLayoutDialog] = useState(false);
   const [showMonitor, setShowMonitor] = useState(true);
   const [fullscreenMonitor, setFullscreenMonitor] = useState(false);
+  const [layoutManagerOpen, setLayoutManagerOpen] = useState(false);
 
   // Fetch agents data - only fetch on mount and explicit WebSocket lifecycle events
   const { data: agents = [], isLoading, error, refetch } = useQuery({
@@ -79,11 +79,11 @@ const Observability: React.FC = () => {
   // Multi-agent output management - only fetch output for agents with panels, and only when not in sidebar-only mode
   const panelAgentIds = useMemo(() => gridLayout.panels.map(panel => panel.agentId), [gridLayout.panels]);
   const shouldFetchOutput = panelAgentIds.length > 0 && visibleAgents.size > 0;
-  const { outputs: agentOutputs, stats, retryAgent } = useMultiAgentOutput(
+  const { outputs: agentOutputs, stats } = useMultiAgentOutput(
     panelAgentIds,
     {
       enabled: !globalPaused && shouldFetchOutput,
-      updateInterval: 5000, // Slower updates - every 5 seconds
+      updateInterval: OUTPUT_POLL_INTERVAL, // Slower updates - every 5 seconds
     }
   );
 
@@ -305,60 +305,6 @@ const Observability: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
-      {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Monitor className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agent Observability</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Monitoring {visibleAgents.size} of {agents.length} agents •
-                {' '}{activeAgents.length} active
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            {/* Connection status */}
-            <div className="flex items-center space-x-2 px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-700/50">
-              {stats.connected > 0 ? (
-                <>
-                  <Wifi className="w-4 h-4 text-green-500 dark:text-green-400" />
-                  <span className="text-sm font-medium text-green-600 dark:text-green-400">Live</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-4 h-4 text-red-500 dark:text-red-400" />
-                  <span className="text-sm font-medium text-red-600 dark:text-red-400">Disconnected</span>
-                </>
-              )}
-            </div>
-
-            {/* Export button */}
-            <button
-              onClick={exportLogs}
-              className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors flex items-center font-medium border border-blue-200 dark:border-blue-700/50"
-            >
-              <Download className="w-4 h-4 mr-1" />
-              Export Logs
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Layout Manager */}
-      <LayoutManager
-        currentLayout={{
-          cols: gridLayout.cols,
-          rows: gridLayout.rows,
-          panels: gridLayout.panels,
-          visibleAgents: Array.from(visibleAgents),
-        }}
-        onLoadLayout={handleLoadLayout}
-      />
-
-      {/* Controls Bar */}
       <ObservabilityControls
         selectedLayout={selectedLayout}
         onLayoutChange={handleLayoutChange}
@@ -370,7 +316,36 @@ const Observability: React.FC = () => {
         sidebarOpen={sidebarOpen}
         agentCount={visibleAgents.size}
         totalAgents={agents.length}
+        activeAgents={activeAgents.length}
+        stats={stats}
+        onExportLogs={exportLogs}
+        onToggleLayoutsPanel={() => setLayoutManagerOpen(prev => !prev)}
+        layoutsPanelOpen={layoutManagerOpen}
+        updateIntervalMs={OUTPUT_POLL_INTERVAL}
       />
+
+      <AnimatePresence initial={false}>
+        {layoutManagerOpen && (
+          <motion.div
+            key="layout-manager"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm"
+          >
+            <LayoutManager
+              currentLayout={{
+                cols: gridLayout.cols,
+                rows: gridLayout.rows,
+                panels: gridLayout.panels,
+                visibleAgents: Array.from(visibleAgents),
+              }}
+              onLoadLayout={handleLoadLayout}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <div className="flex flex-1 min-h-0 flex-col">

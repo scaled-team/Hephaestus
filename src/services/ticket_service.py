@@ -276,6 +276,106 @@ class TicketService:
             if not agent:
                 raise ValueError(f"Agent not found: {agent_id}")
 
+        # ============================================================
+        # PRE-CREATION DUPLICATE CHECK
+        # ============================================================
+        # Check for duplicate tickets BEFORE creating the ticket record
+        # This prevents duplicate tickets from being created in the first place
+        logger.info(f"[TICKET_SERVICE] Checking for duplicate tickets before creation...")
+        try:
+            # Generate temporary embedding for duplicate detection
+            from src.services.embedding_service import EmbeddingService
+            import os
+
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+            if not openai_api_key:
+                logger.warning("[TICKET_SERVICE] OPENAI_API_KEY not set, skipping duplicate check")
+            else:
+                embedding_service = EmbeddingService(openai_api_key)
+
+                # Generate embedding from title + description (same as ticket embedding)
+                temp_embedding = await embedding_service.generate_ticket_embedding(
+                    title=title,
+                    description=description,
+                    tags=tags or []
+                )
+
+                # Search for similar tickets in Qdrant
+                from qdrant_client import QdrantClient
+                from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+                qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+                qdrant_client = QdrantClient(url=qdrant_url)
+
+                # Build filter for same workflow
+                filter_conditions = [
+                    FieldCondition(key="workflow_id", match=MatchValue(value=workflow_id))
+                ]
+
+                # Search for similar tickets
+                search_results = qdrant_client.search(
+                    collection_name="hephaestus_ticket_embeddings",
+                    query_vector=temp_embedding,
+                    query_filter=Filter(must=filter_conditions),
+                    limit=5,
+                    score_threshold=0.75,  # Lower threshold to catch more potential duplicates
+                )
+
+                # Check if any high-similarity tickets found
+                if search_results:
+                    top_match = search_results[0]
+                    similarity_score = top_match.score
+
+                    # Block creation if similarity >= 0.85 (very high similarity)
+                    if similarity_score >= 0.85:
+                        existing_ticket_id = top_match.payload["ticket_id"]
+                        existing_title = top_match.payload["title"]
+                        existing_status = top_match.payload.get("status", "unknown")
+
+                        logger.warning(
+                            f"[TICKET_SERVICE] 🚫 DUPLICATE BLOCKED! "
+                            f"Similarity: {similarity_score:.2%} to ticket {existing_ticket_id}"
+                        )
+
+                        raise ValueError(
+                            f"❌ Duplicate ticket detected!\n\n"
+                            f"A very similar ticket already exists:\n"
+                            f"  • ID: {existing_ticket_id}\n"
+                            f"  • Title: {existing_title}\n"
+                            f"  • Status: {existing_status}\n"
+                            f"  • Similarity: {similarity_score:.0%}\n\n"
+                            f"Please use the existing ticket or modify your title/description to be more specific.\n"
+                            f"If you believe this is a different ticket, please make the title or description more distinct."
+                        )
+
+                    # Warn if moderate similarity (0.75-0.84)
+                    elif similarity_score >= 0.75:
+                        logger.warning(
+                            f"[TICKET_SERVICE] ⚠️  Similar ticket found (similarity: {similarity_score:.2%}): "
+                            f"{top_match.payload['ticket_id']} - '{top_match.payload['title']}'"
+                        )
+                        # Continue with creation but log warning
+
+                    logger.info(
+                        f"[TICKET_SERVICE] ✅ No high-similarity duplicates found "
+                        f"(top match: {similarity_score:.2%})"
+                    )
+                else:
+                    logger.info("[TICKET_SERVICE] ✅ No similar tickets found, proceeding with creation")
+
+        except ValueError as e:
+            # Re-raise duplicate detection errors
+            raise
+        except Exception as e:
+            # Don't fail ticket creation if duplicate check fails
+            logger.warning(
+                f"[TICKET_SERVICE] ⚠️  Duplicate check failed: {e}, proceeding with creation anyway"
+            )
+
+        # ============================================================
+        # CREATE TICKET RECORD
+        # ============================================================
+        with get_db() as db:
             # Generate unique ticket ID
             ticket_id = f"ticket-{uuid.uuid4()}"
 
@@ -1301,10 +1401,47 @@ class TicketService:
             if not ticket:
                 raise ValueError(f"Ticket not found: {ticket_id}")
 
-            # Set is_resolved = True and resolved_at = now()
+            # Get the workflow's board config to find the "done" column
+            from src.phases.phase_manager import PhaseManager
+            from src.core.database import DatabaseManager
+
+            db_manager = DatabaseManager()
+            phase_manager = PhaseManager(db_manager)
+
+            done_status = "done"  # Default
+            try:
+                workflow_config = phase_manager.get_workflow_config(ticket.workflow_id)
+                if workflow_config and workflow_config.board_config:
+                    columns = workflow_config.board_config.get("columns", [])
+                    # Find the last column (highest order)
+                    if columns:
+                        last_column = max(columns, key=lambda c: c.get("order", 0))
+                        done_status = last_column.get("id", "done")
+            except Exception as e:
+                logger.warning(f"Failed to get board config, using default 'done' status: {e}")
+
+            # Set is_resolved = True, resolved_at = now(), and move to done column
             ticket.is_resolved = True
             ticket.resolved_at = datetime.utcnow()
             ticket.updated_at = datetime.utcnow()
+
+            # Move ticket to "done" status (last column in board)
+            old_status = ticket.status
+            ticket.status = done_status
+
+            # Record status change in history
+            if old_status != done_status:
+                history_entry = TicketHistory(
+                    ticket_id=ticket_id,
+                    agent_id=agent_id,
+                    change_type="status_changed",
+                    field_name="status",
+                    old_value=old_status,
+                    new_value=done_status,
+                    change_description=f"Ticket resolved and moved to {done_status}",
+                    changed_at=datetime.utcnow(),
+                )
+                db.add(history_entry)
 
             # Add resolution comment
             comment_id = f"comment-{uuid.uuid4()}"

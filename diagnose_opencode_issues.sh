@@ -23,7 +23,7 @@ curl -s http://localhost:8000/api/agents | python3 -m json.tool | grep -A 10 '"s
 
 echo ""
 echo "5. Checking tmux sessions..."
-docker exec hephaestus-server tmux list-sessions 2>&1
+docker exec hephaestus-server tmux -S /tmp/tmux-shared/default list-sessions 2>&1
 
 echo ""
 echo "6. Checking worktree permissions..."
@@ -31,9 +31,9 @@ docker exec hephaestus-server bash -c "ls -la /tmp/hephaestus_worktrees/wt_*/ope
 
 echo ""
 echo "7. Checking for recent errors in agent tmux sessions..."
-for session in $(docker exec hephaestus-server tmux list-sessions -F '#{session_name}' 2>/dev/null); do
+for session in $(docker exec hephaestus-server tmux -S /tmp/tmux-shared/default list-sessions -F '#{session_name}' 2>/dev/null); do
     echo "  Session: $session"
-    docker exec hephaestus-server tmux capture-pane -t "$session" -p -S -100 2>&1 | grep -i "error\|crash\|fail" | tail -5
+    docker exec hephaestus-server tmux -S /tmp/tmux-shared/default capture-pane -t "$session" -p -S -100 2>&1 | grep -i "error\|crash\|fail" | tail -5
 done
 
 echo ""
@@ -56,4 +56,3 @@ docker exec hephaestus-server opencode --version 2>&1
 echo ""
 echo "=============================="
 echo "✅ Diagnostics complete"
-

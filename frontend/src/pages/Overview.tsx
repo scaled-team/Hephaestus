@@ -33,6 +33,7 @@ import SystemMetricsGraphs from '@/components/overview/SystemMetricsGraphs';
 import BroadcastMessageDialog from '@/components/BroadcastMessageDialog';
 import AgentDetailModal from '@/components/AgentDetailModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
+import { OVERVIEW_CARD, OVERVIEW_SURFACE } from '@/components/overview/styles';
 
 export default function Overview() {
   const queryClient = useQueryClient();
@@ -174,74 +175,78 @@ export default function Overview() {
 
         {/* Agent Alignment Details */}
         {systemData?.agent_alignments && systemData.agent_alignments.length > 0 && (
-          <Card className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+          <Card className={cn(OVERVIEW_CARD)}>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg font-bold dark:text-white">
-                <Bot className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+                <Bot className="w-5 h-5 mr-2 text-blue-500 dark:text-blue-300" />
                 Agent Trajectory Status
               </CardTitle>
-              <CardDescription className="text-sm dark:text-gray-400">
+              <CardDescription className="text-sm dark:text-gray-300">
                 Individual agent alignment and steering needs
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {systemData.agent_alignments.map((agent: any) => (
-                  <button
-                    key={agent.agent_id}
-                    onClick={() => setSelectedAgentId(agent.agent_id)}
-                    className={cn(
-                      "border rounded-lg p-4 text-left transition-all hover:shadow-md hover:scale-[1.02]",
-                      agent.needs_steering
-                        ? "border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950 hover:bg-yellow-100 dark:hover:bg-yellow-900"
-                        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-750 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    )}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="font-mono text-sm text-gray-600 dark:text-gray-400 font-medium">{agent.agent_id.substring(0, 8)}</p>
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">Click to view details</p>
+                {systemData.agent_alignments.map((agent: any) => {
+                  const alignmentPercent = Math.round((agent.alignment_score || 0) * 100);
+                  return (
+                    <button
+                      key={agent.agent_id}
+                      onClick={() => setSelectedAgentId(agent.agent_id)}
+                      className={cn(
+                        OVERVIEW_SURFACE,
+                        "p-4 text-left transition-all hover:shadow-2xl hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
+                        agent.needs_steering
+                          ? "border-yellow-400/80 dark:border-yellow-600/70 bg-yellow-50/90 dark:bg-yellow-900/30"
+                          : "border-transparent"
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="font-mono text-sm text-gray-600 dark:text-gray-400 font-medium">{agent.agent_id.substring(0, 8)}</p>
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">Click to view details</p>
+                          </div>
+                        </div>
+                        {agent.needs_steering && (
+                          <Badge variant="outline" className="bg-yellow-100/70 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700 flex-shrink-0 font-semibold">
+                            Needs Steering
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Alignment</span>
+                          <span className={cn(
+                            "text-base font-bold",
+                            alignmentPercent > 80 ? "text-green-600 dark:text-green-400" :
+                            alignmentPercent > 40 ? "text-yellow-600 dark:text-yellow-400" :
+                            "text-red-600 dark:text-red-400"
+                          )}>
+                            {alignmentPercent}%
+                          </span>
+                        </div>
+                        <Progress
+                          value={alignmentPercent}
+                          className={cn(
+                            "h-2.5 bg-gray-100/70 dark:bg-white/10",
+                            alignmentPercent > 80 ? "[&>div]:bg-green-500 dark:[&>div]:bg-green-400" :
+                            alignmentPercent > 40 ? "[&>div]:bg-yellow-500 dark:[&>div]:bg-yellow-400" :
+                            "[&>div]:bg-red-500 dark:[&>div]:bg-red-400"
+                          )}
+                        />
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Phase: <span className="text-gray-900 dark:text-white">{agent.current_phase || 'Unknown'}</span>
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                          Updated {formatDistanceToNow(new Date(agent.last_update), { addSuffix: true })}
                         </div>
                       </div>
-                      {agent.needs_steering && (
-                        <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700 flex-shrink-0 font-semibold">
-                          Needs Steering
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Alignment</span>
-                        <span className={cn(
-                          "text-base font-bold",
-                          agent.alignment_score > 0.8 ? "text-green-600 dark:text-green-400" :
-                          agent.alignment_score > 0.4 ? "text-yellow-600 dark:text-yellow-400" :
-                          "text-red-600 dark:text-red-400"
-                        )}>
-                          {Math.round((agent.alignment_score || 0) * 100)}%
-                        </span>
-                      </div>
-                      <Progress
-                        value={(agent.alignment_score || 0) * 100}
-                        className={cn(
-                          "h-2.5",
-                          agent.alignment_score > 0.8 ? "[&>div]:bg-green-500 dark:[&>div]:bg-green-400" :
-                          agent.alignment_score > 0.4 ? "[&>div]:bg-yellow-500 dark:[&>div]:bg-yellow-400" :
-                          "[&>div]:bg-red-500 dark:[&>div]:bg-red-400"
-                        )}
-                      />
-                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Phase: <span className="text-gray-900 dark:text-white">{agent.current_phase || 'Unknown'}</span>
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                        Updated {formatDistanceToNow(new Date(agent.last_update), { addSuffix: true })}
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

@@ -55,7 +55,7 @@ class HephaestusConfig:
     conflict_resolution: str = "newest_file_wins"
 
     # Agent Configuration
-    default_cli_tool: str = "claude"
+    default_cli_tool: str = "opencode"
     tmux_session_prefix: str = "agent"
     health_check_interval: int = 60
     max_health_failures: int = 3

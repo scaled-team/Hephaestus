@@ -2,8 +2,9 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Layers, Users, CheckCircle, Clock, ListTodo } from 'lucide-react';
+import { Layers, Users, CheckCircle, ListTodo } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OVERVIEW_CARD, OVERVIEW_SURFACE } from './styles';
 
 interface Phase {
   id: string;
@@ -29,10 +30,10 @@ const getPhaseColor = (order: number, totalPhases: number): string => {
 export default function PhaseDistributionCard({ phases }: PhaseDistributionCardProps) {
   if (!phases || phases.length === 0) {
     return (
-      <Card className="h-full">
+      <Card className={cn(OVERVIEW_CARD)}>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Layers className="w-5 h-5 mr-2 text-blue-600" />
+            <Layers className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
             Active Phase Distribution
           </CardTitle>
           <CardDescription>
@@ -40,7 +41,7 @@ export default function PhaseDistributionCard({ phases }: PhaseDistributionCardP
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-gray-500 text-center py-8">
+          <div className="text-gray-500 dark:text-gray-400 text-center py-8">
             No active phases
           </div>
         </CardContent>
@@ -53,12 +54,12 @@ export default function PhaseDistributionCard({ phases }: PhaseDistributionCardP
   const totalAgents = phases.reduce((sum, p) => sum + p.active_agents, 0);
 
   return (
-    <Card className="h-full">
+    <Card className={cn(OVERVIEW_CARD)}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="flex items-center">
-              <Layers className="w-5 h-5 mr-2 text-blue-600" />
+              <Layers className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
               Active Phase Distribution
             </CardTitle>
             <CardDescription>
@@ -66,11 +67,11 @@ export default function PhaseDistributionCard({ phases }: PhaseDistributionCardP
             </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="bg-blue-50">
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
               <ListTodo className="w-3 h-3 mr-1" />
               {totalTasks} tasks
             </Badge>
-            <Badge variant="outline" className="bg-green-50">
+            <Badge variant="outline" className="bg-green-50 dark:bg-green-900 dark:text-green-200 dark:border-green-700">
               <Users className="w-3 h-3 mr-1" />
               {totalAgents} agents
             </Badge>
@@ -81,10 +82,10 @@ export default function PhaseDistributionCard({ phases }: PhaseDistributionCardP
         <div className="space-y-4">
           {/* Overall Progress */}
           {totalTasks > 0 && (
-            <div className="bg-gray-50 rounded-lg p-3">
+            <div className={cn(OVERVIEW_SURFACE, "p-3")}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Overall Progress</span>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   {completedTasks} / {totalTasks} tasks
                 </span>
               </div>
@@ -106,10 +107,13 @@ export default function PhaseDistributionCard({ phases }: PhaseDistributionCardP
               return (
                 <div
                   key={phase.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className={cn(
+                    OVERVIEW_SURFACE,
+                    "p-4 hover:shadow-xl transition-shadow relative overflow-hidden"
+                  )}
                   style={{
-                    borderColor: phase.active_agents > 0 ? phaseColor : '#e5e7eb',
-                    backgroundColor: phase.active_agents > 0 ? `${phaseColor}10` : 'white'
+                    borderColor: phase.active_agents > 0 ? phaseColor : undefined,
+                    boxShadow: phase.active_agents > 0 ? `0 5px 30px ${phaseColor}25` : undefined
                   }}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -148,25 +152,25 @@ export default function PhaseDistributionCard({ phases }: PhaseDistributionCardP
                     {/* Task & Agent Counts */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="flex items-center">
-                        <ListTodo className="w-3 h-3 mr-1 text-gray-500" />
-                        <span className="text-gray-600">
+                        <ListTodo className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
+                        <span className="text-gray-600 dark:text-gray-400">
                           {phase.active_tasks > 0 && (
-                            <span className="font-medium text-blue-600">{phase.active_tasks} active</span>
+                            <span className="font-medium text-blue-600 dark:text-blue-400">{phase.active_tasks} active</span>
                           )}
                           {phase.active_tasks > 0 && phase.pending_tasks > 0 && ', '}
                           {phase.pending_tasks > 0 && (
                             <span>{phase.pending_tasks} pending</span>
                           )}
                           {phase.active_tasks === 0 && phase.pending_tasks === 0 && (
-                            <span className="text-gray-400">No tasks</span>
+                            <span className="text-gray-400 dark:text-gray-500">No tasks</span>
                           )}
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <Users className="w-3 h-3 mr-1 text-gray-500" />
+                        <Users className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
                         <span className={cn(
-                          "text-gray-600",
-                          phase.active_agents > 0 && "font-medium text-green-600"
+                          "text-gray-600 dark:text-gray-400",
+                          phase.active_agents > 0 && "font-medium text-green-600 dark:text-green-400"
                         )}>
                           {phase.active_agents} agents
                         </span>
@@ -175,7 +179,7 @@ export default function PhaseDistributionCard({ phases }: PhaseDistributionCardP
 
                     {/* Completion Status */}
                     {phase.completed_tasks > 0 && (
-                      <div className="flex items-center text-xs text-green-600">
+                      <div className="flex items-center text-xs text-green-600 dark:text-green-400">
                         <CheckCircle className="w-3 h-3 mr-1" />
                         {phase.completed_tasks} completed
                       </div>

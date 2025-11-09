@@ -31,6 +31,7 @@ Works for ANY type of software project.""",
         "Success criteria defined (how to know when done)",
         "CRITICAL: Infrastructure tickets created FIRST with no blockers",
         "CRITICAL: Component tickets created with proper blocked_by_ticket_ids",
+        "✅ Ticket status updated to 'backlog' for ALL tickets (via MCP update_ticket_status)",
         "CRITICAL: ONE Phase 2 Plan & Implementation task created for EVERY ticket (1:1 relationship)",
         "All requirements and decisions saved to memory for the hive mind",
     ],
@@ -1017,6 +1018,45 @@ Go back through ALL tickets you just created and verify:
 - ❌ Forgetting to include the `blocked_by_ticket_ids` parameter entirely
 
 **Only proceed to STEP 6B after verifying ALL blocking relationships are correct!**
+
+---
+
+STEP 6A2: UPDATE TICKETS TO "BACKLOG" STATUS (KANBAN BOARD VISIBILITY)
+
+**🎯 CRITICAL: Update all created tickets to "backlog" status so the team knows they're ready for Phase 2!**
+
+After creating all tickets, move them from initial state to "backlog" status:
+
+```python
+# For EACH ticket you just created, update its status to "backlog"
+# This tells the team "This work is ready to be started by Phase 2"
+
+# Example: Update backend infrastructure ticket to backlog
+mcp__hephaestus__update_ticket_status({
+    "ticket_id": backend_infra_id,  # Use actual ticket ID from STEP 6A
+    "agent_id": "[YOUR ACTUAL AGENT ID]",
+    "new_status": "backlog",
+    "comment": "Phase 1: Requirements analysis complete. Ticket ready for Phase 2 implementation."
+})
+
+# Repeat for EVERY ticket:
+# - frontend_setup_id
+# - backend_setup_id
+# - database_setup_id
+# - auth_ticket_id
+# - api_ticket_id
+# - registration_ticket_id
+# - dashboard_ticket_id
+# - etc. (ALL tickets created in STEP 6A)
+```
+
+**✅ After this section:**
+- Kanban board shows all tickets in the "backlog" column
+- Team knows Phase 1 analysis is complete and waiting for Phase 2
+- Phase 2 agents can see ready-to-start work
+- Real-time progress visibility for the entire team
+
+**MANDATORY: Do NOT proceed to STEP 6B until ALL tickets are updated to "backlog"!**
 
 ---
 

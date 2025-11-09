@@ -979,18 +979,28 @@ class FrontendAPI:
                 desc(SteeringIntervention.timestamp)
             ).limit(limit).all()
 
-            return [
-                {
+            enriched_events = []
+            for intervention in interventions:
+                analysis = intervention.guardian_analysis
+                alignment_issues: List[str] = []
+                if analysis and analysis.details:
+                    alignment_issues = analysis.details.get("alignment_issues") or []
+
+                enriched_events.append({
                     "id": intervention.id,
                     "agent_id": intervention.agent_id,
                     "guardian_analysis_id": intervention.guardian_analysis_id,
                     "timestamp": intervention.timestamp.isoformat() + 'Z',
                     "steering_type": intervention.steering_type,
                     "message": intervention.message,
-                    "was_successful": intervention.was_successful
-                }
-                for intervention in interventions
-            ]
+                    "was_successful": intervention.was_successful,
+                    "alignment_score": analysis.alignment_score if analysis else None,
+                    "current_phase": analysis.current_phase if analysis else None,
+                    "trajectory_summary": analysis.trajectory_summary if analysis else None,
+                    "alignment_issues": alignment_issues,
+                })
+
+            return enriched_events
         finally:
             session.close()
 

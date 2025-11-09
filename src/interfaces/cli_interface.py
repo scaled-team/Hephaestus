@@ -97,32 +97,36 @@ class ClaudeCodeAgent(CLIAgentInterface):
     """Implementation for Claude Code CLI."""
 
     def get_launch_command(self, system_prompt: str, **kwargs) -> str:
-        """Generate launch command for Claude Code."""
-        import os
+        """Generate launch command for Claude Code.
+
+        ✅ CRITICAL FIX: Create prompt file inside the Docker container, not on the host
+        The tmux session runs inside the container, so the file must be created there.
+        """
+        import base64
         from src.core.simple_config import get_config
 
         config = get_config()
 
-        # Save prompt to a temp file first to avoid shell escaping issues
+        # Get task ID and build prompt file path
         task_id = kwargs.get('task_id', 'default')
         prompt_file = f"/tmp/hep_prompt_{task_id}.txt"
-
-        # Write the system prompt to file directly (safer than echo)
-        with open(prompt_file, 'w') as f:
-            f.write(system_prompt)
-
-        # Make sure the file is readable
-        os.chmod(prompt_file, 0o644)
 
         # Get configured model
         model = getattr(config, 'cli_model', 'sonnet')
 
-        # For GLM models, we use "sonnet" as the CLI flag but env vars are set on tmux session
-        # For standard models, use the model name directly
+        # ✅ CRITICAL: Encode prompt as base64 to safely pass through shell
+        # This avoids quote/escape issues and ensures it works inside the container
+        prompt_b64 = base64.b64encode(system_prompt.encode('utf-8')).decode('utf-8')
+
+        # Create command that:
+        # 1. Creates the prompt file inside the container by decoding base64
+        # 2. Launches Claude Code with the prompt
         if 'GLM' in model.upper():
-            command = f"claude --model sonnet --dangerously-skip-permissions --append-system-prompt \"$(cat {prompt_file})\" --verbose"
+            command = f"printf '%s' '{prompt_b64}' | /bin/base64 -d > {prompt_file} && "
+            command += f"/usr/local/bin/claude --model sonnet --dangerously-skip-permissions --append-system-prompt \"$(cat {prompt_file})\" --verbose"
         else:
-            command = f"claude --model {model} --dangerously-skip-permissions --append-system-prompt \"$(cat {prompt_file})\" --verbose"
+            command = f"printf '%s' '{prompt_b64}' | /bin/base64 -d > {prompt_file} && "
+            command += f"/usr/local/bin/claude --model {model} --dangerously-skip-permissions --append-system-prompt \"$(cat {prompt_file})\" --verbose"
 
         return command
 
@@ -189,7 +193,7 @@ class OpenCodeAgent(CLIAgentInterface):
 
         OpenCode's -p flag adds the prompt but doesn't auto-submit.
         We'll save the prompt to a temp file and use -p "$(cat file)" to load it.
-        The calling code will send Enter after 5 seconds to submit.
+        The calling code will send Enter after 25 seconds to submit.
         """
         import os
         from src.core.simple_config import get_config
@@ -198,7 +202,7 @@ class OpenCodeAgent(CLIAgentInterface):
 
         # Save prompt to a temp file
         task_id = kwargs.get('task_id', 'default')
-        worktree_path = kwargs.get('worktree_path', '/tmp/hephaestus_worktrees/default')  # ✅ Get worktree path
+        worktree_path = kwargs.get('worktree_path', '/tmp/hephaestus_worktrees/default')
         prompt_file = f"/tmp/opencode_prompt_{task_id}.txt"
 
         # Write the system prompt to file
@@ -211,10 +215,10 @@ class OpenCodeAgent(CLIAgentInterface):
         # Get configured model (OpenCode uses provider/model format)
         model = getattr(config, 'cli_model', 'anthropic/claude-sonnet-4')
 
-        # ✅ CRITICAL FIX: Start OpenCode from the worktree directory, not /app
-        # This allows OpenCode to write files to its own working directory
-        # OpenCode will still find opencode.json via parent directory traversal
-        # The worktree directory is where the agent has full write permissions
+        # ✅ RESTORED: Original simple approach from commit 797d3f5
+        # OpenCode command with -p flag to load the prompt
+        # The prompt will be added to the input but not submitted
+        # We cd to worktree so OpenCode can write files there
         command = f"cd {worktree_path} && opencode -p \"$(cat {prompt_file})\" --model {model}"
 
         return command
@@ -450,8 +454,71 @@ class SwarmCodeAgent(CLIAgentInterface):
         }
 
 
+class ShellAgent(CLIAgentInterface):
+    """Implementation for pure shell-based agent execution.
+
+    This agent type launches a basic shell (bash/sh) and works with MCP tools.
+    No external CLI tools required. Recommended for Docker/container environments.
+
+    Features:
+    - No dependency on external CLI tools (Claude Code, OpenCode, etc.)
+    - Works reliably in Docker containers
+    - Full access to shell commands and MCP tools
+    - Suitable for file operations, git, npm, docker commands
+    """
+
+    def get_launch_command(self, system_prompt: str, **kwargs) -> str:
+        """Generate launch command for shell-based agent.
+
+        Simply launch bash/sh. The agent will use MCP tools to interact
+        with the system rather than relying on external CLI tools.
+        """
+        # Launch bash with history and full environment
+        # The agent manager will send the system prompt via MCP after launch
+        return "bash --login"
+
+    def get_health_check_pattern(self) -> str:
+        """Return health check pattern for shell.
+
+        The shell is alive when we see a command prompt.
+        """
+        return r"(\$|#|>)"
+
+    def format_message(self, message: str) -> str:
+        """Format message for shell agent.
+
+        Shell agents receive instructions and can execute commands.
+        No special formatting needed - just send the message.
+        """
+        return message
+
+    def get_stuck_patterns(self) -> List[str]:
+        """Return stuck patterns for shell agent."""
+        return [
+            r"Killed",
+            r"Terminated",
+            r"No such file or directory",
+            r"command not found",  # Some command is missing
+            r"Permission denied",
+            r"Connection refused",
+            r"timeout",
+            r"Segmentation fault",
+        ]
+
+    def parse_output(self, output: str) -> Dict[str, Any]:
+        """Parse shell output."""
+        lines = output.strip().split('\n') if output else []
+
+        return {
+            "last_output": lines[-1] if lines else "",
+            "total_lines": len(lines),
+            "output": output,
+        }
+
+
 # Registry for available CLI agents
 CLI_AGENTS = {
+    "shell": ShellAgent,  # Recommended - no external dependencies
     "claude": ClaudeCodeAgent,
     "opencode": OpenCodeAgent,
     "droid": DroidAgent,

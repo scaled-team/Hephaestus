@@ -139,8 +139,8 @@ class MonitoringConfig(BaseSettings):
 class AgentConfig(BaseSettings):
     """Agent configuration."""
 
-    default_cli_tool: Literal["claude", "codex"] = Field(
-        default="claude",
+    default_cli_tool: Literal["opencode", "claude", "codex", "droid"] = Field(
+        default="opencode",
         description="Default CLI tool for agents",
     )
     max_retries: int = Field(

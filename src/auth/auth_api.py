@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
@@ -124,18 +124,38 @@ def record_login_attempt(
     user_agent: str,
     success: bool,
     failure_reason: Optional[str] = None
-):
-    """Record a login attempt for security auditing."""
-    attempt = LoginAttempt(
-        email=email,
-        ip_address=ip_address,
-        user_agent=user_agent,
-        attempt_type="password",
-        success=success,
-        failure_reason=failure_reason
-    )
-    db.add(attempt)
-    db.commit()
+) -> bool:
+    """Record a login attempt for security auditing.
+
+    Args:
+        db: Database session
+        email: User email
+        ip_address: Client IP address
+        user_agent: Client user agent
+        success: Whether login was successful
+        failure_reason: Reason for failure if applicable
+
+    Returns:
+        True if recorded successfully, False otherwise
+    """
+    try:
+        attempt = LoginAttempt(
+            email=email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            attempt_type="password",
+            success=success,
+            failure_reason=failure_reason
+        )
+        db.add(attempt)
+        db.commit()
+        logger.debug(f"Recorded login attempt for {email}: success={success}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to record login attempt for {email}: {e}", exc_info=True)
+        db.rollback()
+        # Don't raise - login attempt logging shouldn't block authentication
+        return False
 
 
 def check_login_attempts(db: Session, email: str) -> bool:
@@ -168,34 +188,64 @@ def create_audit_log(
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None,
     error_message: Optional[str] = None
-):
-    """Create an audit log entry."""
-    audit = AuditLog(
-        user_id=user_id,
-        action=action,
-        resource_type=resource_type,
-        resource_id=resource_id,
-        status=status_result,
-        ip_address=ip_address,
-        user_agent=user_agent,
-        error_message=error_message
-    )
-    db.add(audit)
-    db.commit()
+) -> bool:
+    """Create an audit log entry.
+
+    Args:
+        db: Database session
+        user_id: User ID performing the action
+        action: Action being audited (e.g., 'login', 'register')
+        resource_type: Type of resource (e.g., 'user', 'ticket')
+        resource_id: ID of the resource
+        status_result: Result of the action ('success' or 'failure')
+        ip_address: Client IP address
+        user_agent: Client user agent
+        error_message: Error message if action failed
+
+    Returns:
+        True if audit log created successfully, False otherwise
+    """
+    try:
+        audit = AuditLog(
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            status=status_result,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            error_message=error_message
+        )
+        db.add(audit)
+        db.commit()
+        logger.debug(f"Created audit log: action={action}, resource={resource_type}, status={status_result}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to create audit log for action {action}: {e}", exc_info=True)
+        db.rollback()
+        # Don't raise - audit log failures shouldn't block API operations
+        return False
 
 
 # API Endpoints
 @router.post("/register", response_model=UserResponse)
-async def register(request: UserRegisterRequest):
+async def register(
+    register_request: UserRegisterRequest,
+    http_request: Request = None
+):
     """Register a new user account."""
     db_manager = get_db_manager()
 
+    # Extract client context from HTTP request
+    ip_address = http_request.client.host if http_request and http_request.client else ""
+    user_agent = http_request.headers.get("user-agent", "") if http_request else ""
+
     # Validate password
-    validate_password(request.password)
+    validate_password(register_request.password)
 
     with db_manager.get_session() as db:
         # Check if email already exists
-        existing_user = db.query(User).filter(User.email == request.email).first()
+        existing_user = db.query(User).filter(User.email == register_request.email).first()
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -203,7 +253,7 @@ async def register(request: UserRegisterRequest):
             )
 
         # Check if username already exists
-        existing_user = db.query(User).filter(User.username == request.username).first()
+        existing_user = db.query(User).filter(User.username == register_request.username).first()
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -213,11 +263,11 @@ async def register(request: UserRegisterRequest):
         # Create new user
         user = User(
             id=str(uuid.uuid4()),
-            email=request.email,
-            username=request.username,
-            password_hash=hash_password(request.password),
-            first_name=request.first_name,
-            last_name=request.last_name,
+            email=register_request.email,
+            username=register_request.username,
+            password_hash=hash_password(register_request.password),
+            first_name=register_request.first_name,
+            last_name=register_request.last_name,
             status="active",
             email_verified=not config.enable_email_verification  # Auto-verify if verification disabled
         )
@@ -233,7 +283,9 @@ async def register(request: UserRegisterRequest):
             action="register",
             resource_type="user",
             resource_id=user.id,
-            status_result="success"
+            status_result="success",
+            ip_address=ip_address,
+            user_agent=user_agent
         )
 
         logger.info(f"New user registered: {user.email}")
@@ -251,9 +303,16 @@ async def register(request: UserRegisterRequest):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    request: Request = None
+):
     """Login with email and password."""
     db_manager = get_db_manager()
+
+    # Extract client context from request
+    ip_address = request.client.host if request and request.client else ""
+    user_agent = request.headers.get("user-agent", "") if request else ""
 
     with db_manager.get_session() as db:
         # Check login attempts
@@ -271,8 +330,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             record_login_attempt(
                 db=db,
                 email=form_data.username,
-                ip_address="",  # TODO: Get from request
-                user_agent="",  # TODO: Get from request
+                ip_address=ip_address,
+                user_agent=user_agent,
                 success=False,
                 failure_reason="Invalid credentials"
             )
@@ -294,8 +353,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         record_login_attempt(
             db=db,
             email=form_data.username,
-            ip_address="",  # TODO: Get from request
-            user_agent="",  # TODO: Get from request
+            ip_address=ip_address,
+            user_agent=user_agent,
             success=True
         )
 
@@ -338,7 +397,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             action="login",
             resource_type="user",
             resource_id=user.id,
-            status_result="success"
+            status_result="success",
+            ip_address=ip_address,
+            user_agent=user_agent
         )
 
         db.commit()

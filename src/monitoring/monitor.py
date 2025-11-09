@@ -226,15 +226,29 @@ class IntelligentMonitor:
             message: Nudge message
         """
         if not message:
-            message = f"""
-[HEPHAESTUS ASSISTANT]: Just checking in! You're working on task {agent.current_task_id}.
-If you're stuck or need help, remember you can:
-- Create sub-tasks using create_task
-- Save discoveries using save_memory
-- Update task status when done using update_task_status
+            message = (
+                f"[HEPHAESTUS ASSISTANT]: Quick check-in on task {agent.current_task_id}.\n"
+                "- Use `get_ticket` to restate the requirements before continuing.\n"
+                "- Run the required tests (e.g., `pytest -q`) and capture the output.\n"
+                "- Keep Phase 3 documentation up to date as you land milestones.\n"
+                "- When you finish (or are blocked), call `update_task_status` with a summary + evidence.\n\n"
+                f"Current time: {datetime.utcnow().isoformat()}"
+            )
 
-Current time: {datetime.utcnow().isoformat()}
-"""
+        reminders = []
+        lower_message = message.lower()
+        if "get_ticket" not in lower_message:
+            reminders.append("Use `get_ticket` to reread the ticket and restate the acceptance criteria.")
+        if "test" not in lower_message:
+            reminders.append("Run the required tests and paste the results before proceeding.")
+        if "documentation" not in lower_message and "phase 3" not in lower_message:
+            reminders.append("Update the required documentation (Phase 3 deliverables) as you make progress.")
+        if "update_task_status" not in lower_message:
+            reminders.append("Remember to call `update_task_status` with status='done' or 'failed' once this iteration wraps.")
+
+        if reminders:
+            reminder_block = "Next required checkpoints:\n" + "\n".join(f"- {text}" for text in reminders)
+            message = f"{message.rstrip()}\n\n{reminder_block}"
 
         await self._send_agent_message(agent, message)
 
@@ -413,6 +427,11 @@ class MonitoringLoop:
 
         # Cache for Guardian summaries
         self.guardian_summaries_cache: Dict[str, Dict[str, Any]] = {}
+        self.killed_restart_history: Dict[str, datetime] = {}
+
+        # Track last cleanup time
+        self.last_cleanup_time: Optional[datetime] = None
+        self.cleanup_interval_minutes = getattr(self.config, "cleanup_interval_minutes", 2)
 
     async def start(self):
         """Start the monitoring loop."""
@@ -432,6 +451,143 @@ class MonitoringLoop:
         """Stop the monitoring loop."""
         logger.info("Stopping monitoring loop")
         self.running = False
+
+    async def _cleanup_stale_agents(self):
+        """
+        Clean up stale agent records, orphaned tmux sessions, and stuck tasks.
+
+        This handles three cases:
+        1. Agents marked as working/idle but with missing tmux sessions -> mark as terminated
+        2. Terminated agents with tmux sessions still running -> kill the tmux sessions
+        3. Tasks assigned to terminated agents -> reset to pending for retry
+        """
+        try:
+            import libtmux
+            import sqlite3
+
+            # Get active tmux sessions
+            try:
+                server = libtmux.Server(socket_path=str(self.config.tmux_socket_path))
+                sessions = server.list_sessions()
+                tmux_sessions = {session.name: session for session in sessions}
+            except Exception as e:
+                logger.error(f"Failed to get tmux sessions for cleanup: {e}")
+                return
+
+            # Get agents from database using raw SQL (to avoid session isolation issues)
+            conn = sqlite3.connect(str(self.config.database_path))
+            cursor = conn.cursor()
+
+            try:
+                # PART 1: Find agents that are not terminated but have missing tmux sessions
+                cursor.execute("""
+                    SELECT id, status, tmux_session_name, agent_type
+                    FROM agents
+                    WHERE status IN ('working', 'idle', 'pending', 'assigned')
+                """)
+                rows = cursor.fetchall()
+
+                stale_count = 0
+                for agent_id, status, tmux_name, agent_type in rows:
+                    if tmux_name and tmux_name not in tmux_sessions:
+                        # Agent has a tmux session name but the session doesn't exist
+                        cursor.execute("""
+                            UPDATE agents
+                            SET status = 'terminated'
+                            WHERE id = ?
+                        """, (agent_id,))
+                        stale_count += 1
+                        logger.info(
+                            f"[CLEANUP] Terminated stale agent {agent_id[:8]}... "
+                            f"({agent_type}, was {status}) - tmux session {tmux_name} not found"
+                        )
+                    elif not tmux_name and status in ('working', 'idle'):
+                        # Agent is working/idle but has no tmux session name (shouldn't happen)
+                        cursor.execute("""
+                            UPDATE agents
+                            SET status = 'terminated'
+                            WHERE id = ?
+                        """, (agent_id,))
+                        stale_count += 1
+                        logger.info(
+                            f"[CLEANUP] Terminated stale agent {agent_id[:8]}... "
+                            f"({agent_type}, was {status}) - no tmux session name"
+                        )
+
+                conn.commit()
+
+                if stale_count > 0:
+                    logger.info(f"[CLEANUP] Cleaned up {stale_count} stale agent(s)")
+                else:
+                    logger.debug("[CLEANUP] No stale agents found")
+
+                # PART 2: Find terminated agents with tmux sessions still running and kill them
+                cursor.execute("""
+                    SELECT id, tmux_session_name, agent_type
+                    FROM agents
+                    WHERE status = 'terminated' AND tmux_session_name IS NOT NULL
+                """)
+                terminated_agents = cursor.fetchall()
+
+                orphaned_count = 0
+                for agent_id, tmux_name, agent_type in terminated_agents:
+                    if tmux_name in tmux_sessions and tmux_name != 'hephaestus_keepalive':
+                        # Terminated agent still has a running tmux session - kill it
+                        try:
+                            session = tmux_sessions[tmux_name]
+                            session.kill_session()
+                            orphaned_count += 1
+                            logger.info(
+                                f"[CLEANUP] Killed orphaned tmux session '{tmux_name}' "
+                                f"for terminated agent {agent_id[:8]}... ({agent_type})"
+                            )
+                        except Exception as e:
+                            logger.error(
+                                f"[CLEANUP] Failed to kill tmux session '{tmux_name}' "
+                                f"for agent {agent_id[:8]}...: {e}"
+                            )
+
+                if orphaned_count > 0:
+                    logger.info(f"[CLEANUP] Killed {orphaned_count} orphaned tmux session(s)")
+                else:
+                    logger.debug("[CLEANUP] No orphaned tmux sessions found")
+
+                # PART 3: Find tasks assigned to terminated agents and reset them to pending
+                cursor.execute("""
+                    SELECT t.id, t.raw_description, a.id as agent_id, a.status as agent_status
+                    FROM tasks t
+                    JOIN agents a ON a.current_task_id = t.id
+                    WHERE t.status = 'assigned' AND a.status = 'terminated'
+                """)
+                stuck_tasks = cursor.fetchall()
+
+                stuck_count = 0
+                for task_id, task_desc, agent_id, agent_status in stuck_tasks:
+                    # Reset task to pending so it can be retried
+                    cursor.execute("""
+                        UPDATE tasks
+                        SET status = 'pending'
+                        WHERE id = ?
+                    """, (task_id,))
+                    stuck_count += 1
+                    logger.info(
+                        f"[CLEANUP] Reset stuck task {task_id[:8]}... to 'pending' "
+                        f"(was assigned to terminated agent {agent_id[:8]}...)"
+                    )
+                    logger.info(f"[CLEANUP]   Task: {task_desc[:70]}")
+
+                conn.commit()
+
+                if stuck_count > 0:
+                    logger.info(f"[CLEANUP] Reset {stuck_count} stuck task(s) to pending for retry")
+                else:
+                    logger.debug("[CLEANUP] No stuck tasks found")
+
+            finally:
+                conn.close()
+
+        except Exception as e:
+            logger.error(f"Error during agent cleanup: {e}")
 
     async def _monitoring_cycle(self):
         """Execute one monitoring cycle with trajectory monitoring."""
@@ -515,6 +671,16 @@ class MonitoringLoop:
         except Exception as e:
             logger.error(f"Error cleaning up orphaned tmux sessions: {e}")
 
+        # Periodically clean up stale agent records (configurable interval)
+        now = datetime.utcnow()
+        if (self.last_cleanup_time is None or
+            (now - self.last_cleanup_time).total_seconds() >= self.cleanup_interval_minutes * 60):
+            try:
+                await self._cleanup_stale_agents()
+                self.last_cleanup_time = now
+            except Exception as e:
+                logger.error(f"Error cleaning up stale agents: {e}")
+
         # Check phase progression if workflow is active
         if self.phase_manager and self.phase_manager.workflow_id:
             try:
@@ -578,10 +744,24 @@ class MonitoringLoop:
                 return None
 
             # Special handling for agents with missing tmux sessions
-            if agent.tmux_session_name and not self.agent_manager.tmux_server.has_session(agent.tmux_session_name):
-                logger.warning(f"Agent {agent.id} has missing tmux session {agent.tmux_session_name}, recreating")
-                await self._handle_missing_tmux_session(agent)
-                return None
+            # Uses API endpoint to check tmux session status across containers
+            if agent.tmux_session_name:
+                try:
+                    import httpx
+                    async with httpx.AsyncClient() as client:
+                        response = await client.get(
+                            f"http://hephaestus-server:8000/api/tmux_session_status/{agent.tmux_session_name}",
+                            timeout=5.0
+                        )
+                        session_status = response.json()
+                        if not session_status.get("exists", False):
+                            logger.warning(f"Agent {agent.id} has missing tmux session {agent.tmux_session_name}, recreating")
+                            await self._handle_missing_tmux_session(agent)
+                            return None
+                except Exception as e:
+                    logger.warning(f"Failed to check tmux session status for {agent.id}: {e}, skipping this cycle")
+                    # Don't fail if we can't check - just skip this cycle
+                    return None
 
             # Get agent output
             tmux_output = self.agent_manager.get_agent_output(
@@ -591,6 +771,10 @@ class MonitoringLoop:
 
             if not tmux_output:
                 logger.warning(f"No output from agent {agent.id}")
+                return None
+
+            # Detect hard crashes (kernel "Killed" signal) and restart before analysis
+            if await self._handle_cli_killed_signal(agent, tmux_output):
                 return None
 
             # Get past summaries for this agent
@@ -609,16 +793,93 @@ class MonitoringLoop:
                 "timestamp": datetime.utcnow(),
             }
 
-            # Execute steering if needed
-            if analysis.get('needs_steering', False):
+            # Execute intelligent nudging based on phase-aware guidance
+            alignment_score = analysis.get('alignment_score', 1.0)
+            alignment_issues = analysis.get('alignment_issues', [])
+            time_elapsed_minutes = 0
+            task: Optional[Task] = None
+
+            # Calculate time elapsed for nudging escalation
+            if agent.current_task_id:
+                session = self.db_manager.get_session()
+                try:
+                    task = session.query(Task).filter_by(id=agent.current_task_id).first()
+                    if task and task.started_at:
+                        time_elapsed_minutes = int((datetime.utcnow() - task.started_at).total_seconds() / 60)
+                finally:
+                    session.close()
+
+            # Agents without a task but still running need to close out
+            if (not agent.current_task_id or not task) and agent_age_seconds > max(
+                self.config.guardian_min_agent_age_seconds, 120
+            ):
+                return await self._handle_agent_without_task(agent, agent_age_seconds)
+
+            # Get phase info if available
+            phase_info = None
+            if task and task.phase_id and task.workflow_id:
+                session = self.db_manager.get_session()
+                try:
+                    from src.core.database import Phase, Workflow
+                    phase = session.query(Phase).filter_by(id=task.phase_id).first()
+                    workflow = session.query(Workflow).filter_by(id=task.workflow_id).first()
+                    if phase:
+                        all_phases = session.query(Phase).filter_by(
+                            workflow_id=task.workflow_id
+                        ).order_by(Phase.order).all()
+                        phase_info = {
+                            "phase_id": phase.id,
+                            "phase_number": phase.order,
+                            "phase_name": phase.name,
+                            "phase_description": phase.description,
+                            "done_definitions": phase.done_definitions or [],
+                            "additional_notes": phase.additional_notes,
+                            "outputs": phase.outputs,
+                            "next_steps": phase.next_steps,
+                            "working_directory": phase.working_directory,
+                            "workflow_context": {
+                                "workflow_id": task.workflow_id,
+                                "workflow_name": workflow.name if workflow else "Unknown",
+                                "total_phases": len(all_phases),
+                                "current_position": f"Phase {phase.order} of {len(all_phases)}",
+                                "all_phase_names": [p.name for p in all_phases],
+                            }
+                        }
+                finally:
+                    session.close()
+
+            # Use intelligent phase-aware nudging
+            nudge_message = await self.guardian.nudge_agent_with_phase_guidance(
+                agent=agent,
+                task=task,
+                phase_info=phase_info,
+                time_elapsed_minutes=time_elapsed_minutes,
+                alignment_score=alignment_score,
+                alignment_issues=alignment_issues,
+            )
+
+            # Persist Guardian analysis and capture ID for steering events
+            guardian_analysis_id = await self._update_agent_health_from_trajectory(agent, analysis)
+
+            # If nudge message generated, send it via steering (after persistence)
+            if nudge_message:
+                if time_elapsed_minutes > 120 and alignment_issues:
+                    steering_type = 'urgent'
+                elif time_elapsed_minutes > 60 and alignment_issues:
+                    steering_type = 'direct'
+                else:
+                    steering_type = 'nudge'
+
                 await self.guardian.steer_agent(
                     agent=agent,
-                    steering_type=analysis.get('steering_type', 'general'),
-                    message=analysis.get('steering_message'),  # Guardian should map from steering_recommendation
+                    steering_type=steering_type,
+                    message=nudge_message,
+                    guardian_analysis_id=guardian_analysis_id,
                 )
-
-            # Update agent health based on trajectory alignment
-            await self._update_agent_health_from_trajectory(agent, analysis)
+                logger.info(
+                    f"[GUARDIAN NUDGE] Agent {agent.id[:8]}... sent {steering_type} nudge "
+                    f"(time={time_elapsed_minutes}min, score={alignment_score:.2f}, issues={len(alignment_issues)})"
+                )
 
             return analysis
 
@@ -674,7 +935,7 @@ class MonitoringLoop:
         finally:
             session.close()
 
-    async def _update_agent_health_from_trajectory(self, agent: Agent, analysis: Dict[str, Any]):
+    async def _update_agent_health_from_trajectory(self, agent: Agent, analysis: Dict[str, Any]) -> Optional[int]:
         """Update agent health based on trajectory analysis.
 
         Args:
@@ -685,7 +946,7 @@ class MonitoringLoop:
         try:
             db_agent = session.query(Agent).filter_by(id=agent.id).first()
             if not db_agent:
-                return
+                return None
 
             # Update health based on trajectory alignment
             if analysis.get('trajectory_aligned', True):
@@ -693,15 +954,43 @@ class MonitoringLoop:
                 db_agent.health_check_failures = 0
                 db_agent.last_activity = datetime.utcnow()
             else:
-                # Agent is off track - increment failures
+                # ✅ FIX: Agent off track, but check if it's just doing file I/O operations
+                # Agents writing files may have silent periods where no visible output occurs
+                # Only increment failures if alignment is very poor (< 0.3) OR if it's been
+                # very long since last activity (>10 minutes - probably actually stuck)
                 alignment_score = analysis.get('alignment_score', 0.5)
-                if alignment_score < 0.3:
+                time_since_last_activity = (datetime.utcnow() - db_agent.last_activity).total_seconds() / 60.0
+
+                # Check if agent recently had visible activity (last 5 minutes)
+                recently_active = time_since_last_activity < 5.0
+
+                if alignment_score < 0.1:
+                    # Very bad alignment - definitely stuck
                     db_agent.health_check_failures = max(
                         db_agent.health_check_failures + 2,
                         self.config.max_health_check_failures
                     )
+                    logger.warning(f"Agent {agent.id[:8]}... very low alignment ({alignment_score:.2f}), incrementing failures")
+                elif alignment_score < 0.3:
+                    # Poor alignment - but if recently active, might be doing file I/O
+                    if not recently_active:
+                        # No activity in 5+ minutes, this is genuinely stuck
+                        db_agent.health_check_failures = max(
+                            db_agent.health_check_failures + 1,
+                            self.config.max_health_check_failures
+                        )
+                        logger.warning(f"Agent {agent.id[:8]}... low alignment and inactive ({alignment_score:.2f}, {time_since_last_activity:.1f}m since activity)")
+                    else:
+                        # Recently active but low alignment - likely doing file I/O, don't penalize
+                        logger.debug(f"Agent {agent.id[:8]}... low alignment ({alignment_score:.2f}) but recently active ({time_since_last_activity:.1f}m), assuming file I/O")
+                        # Don't increment failures, but also don't reset
                 elif alignment_score < 0.5:
-                    db_agent.health_check_failures += 1
+                    # Moderate alignment issue - only increment if truly inactive
+                    if time_since_last_activity > 10.0:
+                        db_agent.health_check_failures += 1
+                        logger.debug(f"Agent {agent.id[:8]}... moderate alignment and old activity ({alignment_score:.2f}, {time_since_last_activity:.1f}m)")
+                    else:
+                        logger.debug(f"Agent {agent.id[:8]}... moderate alignment but recently active ({alignment_score:.2f}, {time_since_last_activity:.1f}m), skipping penalty")
 
             # Save to dedicated Guardian analysis table
             guardian_analysis = GuardianAnalysis(
@@ -734,8 +1023,93 @@ class MonitoringLoop:
             session.add(summary_log)
             session.commit()
 
+            return guardian_analysis.id
+
         finally:
             session.close()
+
+        return None
+
+    async def _handle_cli_killed_signal(self, agent: Agent, tmux_output: str) -> bool:
+        """Detect 'Killed' signals in output and restart the CLI if necessary."""
+        if not self._output_indicates_killed(tmux_output):
+            return False
+
+        now = datetime.utcnow()
+        last_restart = self.killed_restart_history.get(agent.id)
+        if last_restart and now - last_restart < timedelta(minutes=5):
+            logger.warning(
+                f"[GUARDIAN SAFETY] Agent {agent.id[:8]} CLI killed recently; "
+                f"last restart {int((now - last_restart).total_seconds())}s ago. Skipping auto-restart."
+            )
+            return False
+
+        logger.error(f"[GUARDIAN SAFETY] Detected 'Killed' signal for agent {agent.id[:8]} - restarting CLI")
+        await self.agent_manager.restart_agent(
+            agent.id,
+            reason="CLI process terminated (detected 'Killed' output)",
+        )
+        self.killed_restart_history[agent.id] = now
+        return True
+
+    def _output_indicates_killed(self, tmux_output: str) -> bool:
+        """Return True if recent output indicates the CLI was killed."""
+        if not tmux_output:
+            return False
+
+        recent_lines = tmux_output.strip().splitlines()[-20:]
+        for line in recent_lines:
+            stripped = line.strip().lower()
+            if stripped == "killed" or stripped.startswith("killed "):
+                return True
+        return False
+
+    async def _handle_agent_without_task(self, agent: Agent, agent_age_seconds: float) -> Dict[str, Any]:
+        """Handle agents that no longer have an active task but keep running."""
+        logger.warning(
+            f"[GUARDIAN SAFETY] Agent {agent.id[:8]} has no active task; sending completion reminder"
+        )
+
+        reminder = (
+            "You no longer have an active task for this session. "
+            "If your diagnostic/reporting work is complete, call `update_task_status` with status='done' "
+            "and include the summary + evidence so the monitor can close this agent. "
+            "If you still need to work, request a new task before issuing additional commands."
+        )
+
+        # Send immediate steering message
+        await self.guardian.steer_agent(
+            agent=agent,
+            steering_type="drifting",
+            message=reminder,
+        )
+
+        summary = {
+            "agent_id": agent.id,
+            "agent_type": agent.agent_type,
+            "trajectory_summary": "Agent has no active task but remains running. Prompted to close via update_task_status.",
+            "current_phase": "completed",
+            "trajectory_aligned": False,
+            "alignment_score": 0.2,
+            "alignment_issues": ["Agent session is running without an assigned task"],
+            "needs_steering": True,
+            "steering_type": "drifting",
+            "steering_message": reminder,
+            "steering_recommendation": reminder,
+            "accumulated_goal": "No active task (awaiting closure)",
+            "active_constraints": [],
+            "current_focus": None,
+            "session_duration": agent_age_seconds,
+            "conversation_length": 0,
+        }
+
+        # Cache and persist the summary for conductor/analytics
+        self.guardian_summaries_cache[agent.id] = {
+            "summary": summary,
+            "timestamp": datetime.utcnow(),
+        }
+        await self._update_agent_health_from_trajectory(agent, summary)
+        return summary
 
     async def _save_conductor_analysis(self, analysis: Dict[str, Any]):
         """Save Conductor analysis to dedicated table.
