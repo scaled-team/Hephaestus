@@ -462,17 +462,10 @@ class MonitoringLoop:
         3. Tasks assigned to terminated agents -> reset to pending for retry
         """
         try:
-            import libtmux
             import sqlite3
 
-            # Get active tmux sessions
-            try:
-                server = libtmux.Server(socket_path=str(self.config.tmux_socket_path))
-                sessions = server.list_sessions()
-                tmux_sessions = {session.name: session for session in sessions}
-            except Exception as e:
-                logger.error(f"Failed to get tmux sessions for cleanup: {e}")
-                return
+            tmux_sessions = set(self.agent_manager.list_tmux_sessions())
+            logger.debug(f"[CLEANUP] Visible tmux sessions: {tmux_sessions}")
 
             # Get agents from database using raw SQL (to avoid session isolation issues)
             conn = sqlite3.connect(str(self.config.database_path))
@@ -489,7 +482,7 @@ class MonitoringLoop:
 
                 stale_count = 0
                 for agent_id, status, tmux_name, agent_type in rows:
-                    if tmux_name and tmux_name not in tmux_sessions:
+                    if tmux_name and not self.agent_manager.has_tmux_session(tmux_name):
                         # Agent has a tmux session name but the session doesn't exist
                         cursor.execute("""
                             UPDATE agents
@@ -531,20 +524,17 @@ class MonitoringLoop:
 
                 orphaned_count = 0
                 for agent_id, tmux_name, agent_type in terminated_agents:
-                    if tmux_name in tmux_sessions and tmux_name != 'hephaestus_keepalive':
-                        # Terminated agent still has a running tmux session - kill it
-                        try:
-                            session = tmux_sessions[tmux_name]
-                            session.kill_session()
+                    if tmux_name and tmux_name != 'hephaestus_keepalive' and self.agent_manager.has_tmux_session(tmux_name):
+                        if self.agent_manager.kill_tmux_session(tmux_name):
                             orphaned_count += 1
                             logger.info(
                                 f"[CLEANUP] Killed orphaned tmux session '{tmux_name}' "
                                 f"for terminated agent {agent_id[:8]}... ({agent_type})"
                             )
-                        except Exception as e:
+                        else:
                             logger.error(
                                 f"[CLEANUP] Failed to kill tmux session '{tmux_name}' "
-                                f"for agent {agent_id[:8]}...: {e}"
+                                f"for agent {agent_id[:8]}..."
                             )
 
                 if orphaned_count > 0:
@@ -588,6 +578,52 @@ class MonitoringLoop:
 
         except Exception as e:
             logger.error(f"Error during agent cleanup: {e}")
+
+    async def _cleanup_completed_agents(self):
+        """Terminate agents whose tasks are done after a grace period.
+
+        ✅ FIX: Check task completion time, not agent last_activity.
+        Guardian updates last_activity during health checks, which prevents
+        cleanup of zombie agents (agents with completed tasks that didn't exit).
+        """
+        from src.core.database import Agent, Task
+
+        grace_minutes = getattr(self.config, "completed_agent_grace_minutes", 5)
+        cutoff = datetime.utcnow() - timedelta(minutes=grace_minutes)
+
+        session = self.db_manager.get_session()
+        try:
+            rows = session.query(Agent.id, Task.completed_at).join(
+                Task, Agent.current_task_id == Task.id
+            ).filter(
+                Agent.status != "terminated",
+                Task.status == "done"
+            ).all()
+        finally:
+            session.close()
+
+        terminate_ids = []
+        for agent_id, task_completed_at in rows:
+            # ✅ FIX: Check when TASK was completed, not when agent was last active
+            # This prevents Guardian's last_activity updates from interfering
+            if task_completed_at and task_completed_at > cutoff:
+                continue  # Task completed recently, give grace period
+            terminate_ids.append(agent_id)
+
+        if not terminate_ids:
+            return
+
+        logger.info(
+            f"[COMPLETED_AGENT_CLEANUP] Terminating {len(terminate_ids)} agent(s) "
+            f"whose tasks are done and exceeded {grace_minutes} minute grace period"
+        )
+
+        for agent_id in terminate_ids:
+            try:
+                await self.agent_manager.terminate_agent(agent_id)
+                logger.info(f"[COMPLETED_AGENT_CLEANUP] Terminated agent {agent_id[:8]}...")
+            except Exception as e:
+                logger.error(f"[COMPLETED_AGENT_CLEANUP] Failed to terminate agent {agent_id}: {e}")
 
     async def _monitoring_cycle(self):
         """Execute one monitoring cycle with trajectory monitoring."""
@@ -677,6 +713,7 @@ class MonitoringLoop:
             (now - self.last_cleanup_time).total_seconds() >= self.cleanup_interval_minutes * 60):
             try:
                 await self._cleanup_stale_agents()
+                await self._cleanup_completed_agents()
                 self.last_cleanup_time = now
             except Exception as e:
                 logger.error(f"Error cleaning up stale agents: {e}")
@@ -1031,7 +1068,10 @@ class MonitoringLoop:
         return None
 
     async def _handle_cli_killed_signal(self, agent: Agent, tmux_output: str) -> bool:
-        """Detect 'Killed' signals in output and restart the CLI if necessary."""
+        """Detect 'Killed' signals in output and restart the CLI if necessary.
+
+        ✅ IMPROVED: Added better logging and error handling for restart failures.
+        """
         if not self._output_indicates_killed(tmux_output):
             return False
 
@@ -1044,23 +1084,44 @@ class MonitoringLoop:
             )
             return False
 
-        logger.error(f"[GUARDIAN SAFETY] Detected 'Killed' signal for agent {agent.id[:8]} - restarting CLI")
-        await self.agent_manager.restart_agent(
-            agent.id,
-            reason="CLI process terminated (detected 'Killed' output)",
+        logger.error(
+            f"[GUARDIAN SAFETY] 🚨 Detected 'Killed' signal for agent {agent.id[:8]} - "
+            f"attempting restart (likely OOM kill)"
         )
-        self.killed_restart_history[agent.id] = now
-        return True
+
+        try:
+            await self.agent_manager.restart_agent(
+                agent.id,
+                reason="CLI process terminated (detected 'Killed' output - likely OOM)",
+            )
+            self.killed_restart_history[agent.id] = now
+            logger.info(f"[GUARDIAN SAFETY] ✅ Successfully restarted agent {agent.id[:8]} after Killed signal")
+            return True
+        except Exception as e:
+            logger.error(
+                f"[GUARDIAN SAFETY] ❌ Failed to restart agent {agent.id[:8]} after Killed signal: {e}",
+                exc_info=True
+            )
+            # Don't update restart history if restart failed, so we can try again next cycle
+            return False
 
     def _output_indicates_killed(self, tmux_output: str) -> bool:
-        """Return True if recent output indicates the CLI was killed."""
+        """Return True if recent output indicates the CLI was killed.
+
+        ✅ IMPROVED: Also detect shell prompts (agent at bash prompt after being killed).
+        """
         if not tmux_output:
             return False
 
         recent_lines = tmux_output.strip().splitlines()[-20:]
         for line in recent_lines:
             stripped = line.strip().lower()
+            # Check for "Killed" signal
             if stripped == "killed" or stripped.startswith("killed "):
+                return True
+            # Check for shell prompt (indicates agent dropped to shell after crash)
+            if "root@" in line and "#" in line and "hephaestus_worktrees" in line:
+                logger.warning(f"Detected shell prompt in agent output - agent likely crashed")
                 return True
         return False
 
@@ -1196,7 +1257,7 @@ class MonitoringLoop:
         """
         # Check if tmux session exists first
         if agent.tmux_session_name:
-            if not self.agent_manager.tmux_server.has_session(agent.tmux_session_name):
+            if not self.agent_manager.has_tmux_session(agent.tmux_session_name):
                 logger.warning(f"Agent {agent.id} tmux session {agent.tmux_session_name} missing")
                 return False
 
@@ -1434,11 +1495,14 @@ class MonitoringLoop:
         logger.debug("Starting orphaned tmux session cleanup")
 
         try:
-            # Get all tmux sessions that start with 'agent' (the new naming convention)
-            agent_sessions = []
-            for session in self.agent_manager.tmux_server.sessions:
-                if session.name.startswith('agent'):
-                    agent_sessions.append(session.name)
+            session_prefix = getattr(self.config, "tmux_session_prefix", "agent")
+            prefix_with_separator = f"{session_prefix}_"
+
+            tmux_sessions = self.agent_manager.list_tmux_sessions()
+            agent_sessions = [
+                name for name in tmux_sessions
+                if name.startswith(prefix_with_separator)
+            ]
 
             if not agent_sessions:
                 logger.debug("No agent tmux sessions found")
@@ -1475,21 +1539,17 @@ class MonitoringLoop:
                 return
             
             time_since_last_check = (current_time - self._last_orphan_check_time).total_seconds()
+            if time_since_last_check < GRACE_PERIOD_SECONDS:
+                logger.debug(
+                    f"Skipping orphan detection - grace period not elapsed "
+                    f"({time_since_last_check:.0f}s < {GRACE_PERIOD_SECONDS}s)"
+                )
+                return
             
-            orphaned_sessions = []
-            for tmux_sess in self.agent_manager.tmux_server.sessions:
-                if tmux_sess.name not in agent_sessions:
-                    continue
-                if tmux_sess.name in active_session_names:
-                    continue
-                
-                # Apply grace period: if we just started monitoring or haven't checked in a while,
-                # skip orphan detection to let new agents get registered in DB
-                if time_since_last_check < GRACE_PERIOD_SECONDS:
-                    logger.debug(f"Skipping session {tmux_sess.name} - within grace period ({time_since_last_check:.0f}s < {GRACE_PERIOD_SECONDS}s)")
-                    continue
-                    
-                orphaned_sessions.append(tmux_sess.name)
+            orphaned_sessions = [
+                session_name for session_name in agent_sessions
+                if session_name not in active_session_names
+            ]
             
             # Update last check time
             self._last_orphan_check_time = current_time
@@ -1503,16 +1563,11 @@ class MonitoringLoop:
             # Kill orphaned sessions
             killed_count = 0
             for session_name in orphaned_sessions:
-                try:
-                    # Find and kill the session
-                    for tmux_sess in self.agent_manager.tmux_server.sessions:
-                        if tmux_sess.name == session_name:
-                            tmux_sess.kill_session()
-                            logger.info(f"Killed orphaned tmux session: {session_name}")
-                            killed_count += 1
-                            break
-                except Exception as e:
-                    logger.warning(f"Failed to kill orphaned session {session_name}: {e}")
+                if self.agent_manager.kill_tmux_session(session_name):
+                    logger.info(f"Killed orphaned tmux session: {session_name}")
+                    killed_count += 1
+                else:
+                    logger.warning(f"Failed to kill orphaned session {session_name}")
 
             if killed_count > 0:
                 logger.info(f"Successfully cleaned up {killed_count} orphaned tmux sessions")
@@ -1772,24 +1827,35 @@ class MonitoringLoop:
                 'validation_prompt': diagnostic_prompt,  # Use validation_prompt field for custom prompt
             }
 
-            logger.info("[DIAGNOSTIC MONITOR] Spawning diagnostic agent...")
-            agent = await self.agent_manager.create_agent_for_task(
-                task=diagnostic_task,
-                enriched_data=enriched_data,
-                memories=[],  # Diagnostic agent gets everything in prompt
-                project_context="",
-                agent_type="diagnostic",
-                use_existing_worktree=True,
-                working_directory=str(self.config.main_repo_path),  # Use main repo
-            )
+            logger.info("[DIAGNOSTIC MONITOR] Spawning diagnostic agent via API...")
+            spawn_payload = {
+                "task_id": diagnostic_task.id,
+                "enriched_data": enriched_data,
+                "memories": [],  # Diagnostic agent gets everything in prompt
+                "project_context": "",
+                "agent_type": "diagnostic",
+                "use_existing_worktree": True,
+                "working_directory": str(self.config.main_repo_path),
+            }
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "http://hephaestus-server:8000/api/spawn_agent_for_task",
+                    json=spawn_payload,
+                    timeout=60.0,
+                )
+                response.raise_for_status()
+                agent_id = response.json().get("agent_id")
+                if not agent_id:
+                    raise RuntimeError("Spawn agent API did not return agent_id")
 
             # Update diagnostic run with agent ID
-            diagnostic_run.diagnostic_agent_id = agent.id
+            diagnostic_run.diagnostic_agent_id = agent_id
             diagnostic_run.status = "running"
             session.commit()
 
             logger.info(f"[DIAGNOSTIC MONITOR] ✅ Diagnostic agent created successfully!")
-            logger.info(f"[DIAGNOSTIC MONITOR] Agent ID: {agent.id[:8]}")
+            logger.info(f"[DIAGNOSTIC MONITOR] Agent ID: {agent_id[:8]}")
             logger.info(f"[DIAGNOSTIC MONITOR] Task ID: {task_id[:8]}")
             logger.info(f"[DIAGNOSTIC MONITOR] Run ID: {run_id[:8]}")
             logger.info(f"[DIAGNOSTIC MONITOR] Workflow: {workflow_id[:8]}")

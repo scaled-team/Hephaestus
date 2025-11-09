@@ -76,6 +76,7 @@ class Config:
         self.agent_health_check_interval = agents.get('health_check_interval', 60)
         self.max_health_check_failures = agents.get('max_health_failures', 3)
         self.agent_termination_delay = agents.get('termination_delay', 5)
+        self.completed_agent_grace_minutes = agents.get('completed_agent_grace_minutes', 5)
 
         # Vector store settings
         vector_store = config.get('vector_store', {})

@@ -191,22 +191,24 @@ class OpenCodeAgent(CLIAgentInterface):
     def get_launch_command(self, system_prompt: str, **kwargs) -> str:
         """Generate launch command for OpenCode.
 
-        OpenCode's -p flag adds the prompt but doesn't auto-submit.
-        We'll save the prompt to a temp file and use -p "$(cat file)" to load it.
-        The calling code will send Enter after 25 seconds to submit.
+        ✅ CRITICAL FIX: Write prompt file directly from Python (not via shell)
+        The agent manager runs inside the container, so we can write files directly.
+        This avoids tmux command length limits (76KB+ prompts are too long for send_keys).
         """
         import os
         from src.core.simple_config import get_config
 
         config = get_config()
 
-        # Save prompt to a temp file
+        # Get task ID and build prompt file path
         task_id = kwargs.get('task_id', 'default')
         worktree_path = kwargs.get('worktree_path', '/tmp/hephaestus_worktrees/default')
         prompt_file = f"/tmp/opencode_prompt_{task_id}.txt"
 
-        # Write the system prompt to file
-        with open(prompt_file, 'w') as f:
+        # ✅ CRITICAL: Write prompt file directly from Python
+        # This runs inside the container, so the file is accessible to OpenCode
+        # Avoids tmux command length limits (base64 approach creates 76KB+ commands)
+        with open(prompt_file, 'w', encoding='utf-8') as f:
             f.write(system_prompt)
 
         # Make sure the file is readable
@@ -215,8 +217,7 @@ class OpenCodeAgent(CLIAgentInterface):
         # Get configured model (OpenCode uses provider/model format)
         model = getattr(config, 'cli_model', 'anthropic/claude-sonnet-4')
 
-        # ✅ RESTORED: Original simple approach from commit 797d3f5
-        # OpenCode command with -p flag to load the prompt
+        # Launch OpenCode with the prompt loaded via -p flag
         # The prompt will be added to the input but not submitted
         # We cd to worktree so OpenCode can write files there
         command = f"cd {worktree_path} && opencode -p \"$(cat {prompt_file})\" --model {model}"

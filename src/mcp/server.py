@@ -546,6 +546,27 @@ class SendMessageResponse(BaseModel):
     message: str = Field(..., description="Status message")
 
 
+class SpawnAgentRequest(BaseModel):
+    """Request to spawn an agent for an existing task."""
+
+    task_id: str = Field(..., description="ID of the task to assign to the agent")
+    enriched_data: Dict[str, Any] = Field(..., description="Enriched data/prompt components")
+    memories: List[Dict[str, Any]] = Field(default_factory=list, description="Preloaded memories")
+    project_context: str = Field("", description="Project context string")
+    cli_type: Optional[str] = Field(None, description="CLI agent type override")
+    working_directory: Optional[str] = Field(None, description="Worktree directory for agent")
+    agent_type: str = Field("phase", description="Type of agent being created")
+    use_existing_worktree: bool = Field(False, description="If True, reuse provided directory")
+    commit_sha: Optional[str] = Field(None, description="Optional commit SHA for validators")
+
+
+class SpawnAgentResponse(BaseModel):
+    """Response after spawning an agent."""
+
+    success: bool = Field(..., description="Whether the agent was created")
+    agent_id: str = Field(..., description="ID of the created agent")
+
+
 # Server state
 class ServerState:
     """Global server state."""
@@ -3135,6 +3156,40 @@ async def send_message(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/spawn_agent_for_task", response_model=SpawnAgentResponse)
+async def spawn_agent_for_task(request: SpawnAgentRequest):
+    """Spawn an agent for an existing task on behalf of monitor/diagnostic services."""
+    logger.info(f"[SPAWN_AGENT] Request received for task {request.task_id[:8]} (type={request.agent_type})")
+    try:
+        session = server_state.db_manager.get_session()
+        try:
+            task = session.query(Task).filter_by(id=request.task_id).first()
+            if not task:
+                raise HTTPException(status_code=404, detail=f"Task {request.task_id} not found")
+        finally:
+            session.close()
+
+        agent = await server_state.agent_manager.create_agent_for_task(
+            task=task,
+            enriched_data=request.enriched_data,
+            memories=request.memories,
+            project_context=request.project_context,
+            cli_type=request.cli_type,
+            working_directory=request.working_directory,
+            agent_type=request.agent_type,
+            use_existing_worktree=request.use_existing_worktree,
+            commit_sha=request.commit_sha,
+        )
+
+        return SpawnAgentResponse(success=True, agent_id=agent.id)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[SPAWN_AGENT] Failed for task {request.task_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== TICKET TRACKING SYSTEM ENDPOINTS ====================
 
 @app.post("/api/tickets/create", response_model=CreateTicketResponse)
@@ -4823,7 +4878,7 @@ async def check_tmux_session(session_name: str):
     """
     try:
         # Check if session exists
-        has_session = server_state.agent_manager.tmux_server.has_session(session_name)
+        has_session = server_state.agent_manager.has_tmux_session(session_name)
 
         status = {
             "exists": has_session,

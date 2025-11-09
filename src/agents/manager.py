@@ -136,6 +136,48 @@ class AgentManager:
             logger.warning(f"Error capturing pane for {session_name}: {e}")
             return ""
 
+    def has_tmux_session(self, session_name: Optional[str]) -> bool:
+        """Public wrapper to safely check for tmux sessions using subprocess."""
+        if not session_name:
+            return False
+        return self._tmux_has_session(session_name)
+
+    def list_tmux_sessions(self) -> List[str]:
+        """List tmux sessions via subprocess to avoid libtmux session cache issues."""
+        try:
+            result = subprocess.run(
+                ["tmux", "-S", str(self.socket_path), "list-sessions", "-F", "#{session_name}"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode != 0:
+                logger.warning(f"Failed to list tmux sessions: {result.stderr.strip()}")
+                return []
+            return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+        except Exception as e:
+            logger.warning(f"Error listing tmux sessions: {e}")
+            return []
+
+    def kill_tmux_session(self, session_name: str) -> bool:
+        """Kill a tmux session using subprocess (safe across containers)."""
+        if not session_name:
+            return False
+        try:
+            result = subprocess.run(
+                ["tmux", "-S", str(self.socket_path), "kill-session", "-t", session_name],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode != 0:
+                logger.warning(f"Failed to kill tmux session {session_name}: {result.stderr.strip()}")
+                return False
+            return True
+        except Exception as e:
+            logger.warning(f"Error killing tmux session {session_name}: {e}")
+            return False
+
     def _paste_text_to_pane(self, pane: libtmux.Pane, text: str) -> bool:
         """Inject text into a tmux pane via buffer/paste to avoid slow key simulation."""
         if not text:
@@ -414,6 +456,21 @@ class AgentManager:
 
             # 6. Register agent in database
             session = self.db_manager.get_session()
+            try:
+                if agent_type == "phase":
+                    active_statuses = ("working", "pending", "assigned", "idle")
+                    duplicate = session.query(Agent).filter(
+                        Agent.current_task_id == task.id,
+                        Agent.status.in_(active_statuses)
+                    ).first()
+                    if duplicate:
+                        raise Exception(
+                            f"Task {task.id[:8]} already has active agent {duplicate.id[:8]} "
+                            f"(status={duplicate.status})"
+                        )
+            except:
+                session.close()
+                raise
             agent = Agent(
                 id=agent_id,
                 system_prompt=system_prompt,
@@ -481,11 +538,15 @@ class AgentManager:
                     f"{ready_timeout}s; proceeding with prompt delivery anyway."
                 )
 
-            if not self.tmux_server.has_session(session_name):
+            if not self.has_tmux_session(session_name):
                 logger.error(f"Tmux session {session_name} died during initialization wait!")
                 raise Exception("Tmux session died during initialization wait")
 
             # Send initial prompt (or just Enter for OpenCode)
+            # ✅ FIX: Disable verification for all agents
+            # OpenCode doesn't echo prompts to terminal (loads via -p flag)
+            # Other agents may also have issues with verification
+
             await self._send_initial_prompt_with_retry(
                 pane=pane,
                 cli_agent=cli_agent,
@@ -494,7 +555,7 @@ class AgentManager:
                 agent_id=agent_id,
                 task_id=task.id,
                 max_retries=3,
-                verify_delivery=True  # ✅ Enable prompt delivery verification
+                verify_delivery=False  # ✅ DISABLED - verification causes false positives
             )
 
             logger.info(f"=== END INITIAL PROMPT DELIVERY for agent {agent_id} ===")
@@ -589,11 +650,10 @@ class AgentManager:
             # Continue anyway - tmux will auto-start on new_session
 
         # Check if session already exists
-        if self.tmux_server.has_session(session_name):
+        if self.has_tmux_session(session_name):
             logger.warning(f"Session {session_name} already exists, killing it")
-            existing = self.tmux_server.get_by_id(session_name)
-            if existing:
-                existing.kill_session()
+            if not self.kill_tmux_session(session_name):
+                logger.warning(f"Failed to kill existing session {session_name}; continuing anyway")
 
         # Create new session with working directory (should be worktree path)
         session_kwargs = {
@@ -675,6 +735,26 @@ class AgentManager:
 
 Task ID: {task.id}
 {cwd_info}
+
+🚨🚨🚨 CRITICAL REMINDER - READ THIS FIRST! 🚨🚨🚨
+═══════════════════════════════════════════════════════════════════════
+⚠️  WHEN YOU FINISH YOUR TASK, YOU **MUST** CALL update_task_status! ⚠️
+
+WITHOUT THIS CALL, THE SYSTEM WILL NOT KNOW YOU ARE DONE!
+YOU WILL BE STUCK RUNNING FOREVER!
+
+**MANDATORY FINAL STEP:**
+```python
+mcp__hephaestus__update_task_status({{
+    "task_id": "{task.id}",
+    "agent_id": "{agent_id}",
+    "status": "done",
+    "summary": "Brief summary of what you accomplished"
+}})
+```
+
+**DO NOT FORGET THIS STEP - IT IS NOT OPTIONAL!**
+═══════════════════════════════════════════════════════════════════════
 """
 
         logger.info(f"🔍 PROMPT SIZE DEBUG: Base message length: {len(base_message)} chars")
@@ -953,6 +1033,33 @@ When another agent sends you a message, consider responding if you have helpful 
         base_message += f"""
 {phase_context_section}
 
+═══════════════════════════════════════════════════════════════════════
+🚨🚨🚨 FINAL REMINDER BEFORE YOU START 🚨🚨🚨
+═══════════════════════════════════════════════════════════════════════
+
+**THE #1 MOST COMMON MISTAKE: FORGETTING TO CALL update_task_status!**
+
+When you finish your work, you MUST call:
+
+```python
+mcp__hephaestus__update_task_status({{
+    "task_id": "{task.id}",
+    "agent_id": "{agent_id}",
+    "status": "done",
+    "summary": "What you accomplished"
+}})
+```
+
+**WITHOUT THIS CALL:**
+- ❌ The system will NOT know you are done
+- ❌ You will be stuck running forever
+- ❌ Your work will NOT be recognized
+- ❌ The workflow will be blocked
+
+**THIS IS NOT OPTIONAL - IT IS MANDATORY!**
+
+═══════════════════════════════════════════════════════════════════════
+
 Begin working on your task now.
 
 REMEMBER:
@@ -1150,7 +1257,7 @@ REMEMBER:
             final_output = ""
             if agent.tmux_session_name:
                 try:
-                    if self.tmux_server.has_session(agent.tmux_session_name):
+                    if self.has_tmux_session(agent.tmux_session_name):
                         # Find session by iteration (avoid deprecated get_by_id)
                         tmux_session = None
                         for tmux_sess in self.tmux_server.sessions:
@@ -1232,7 +1339,7 @@ REMEMBER:
             # Kill existing tmux session
             if agent.tmux_session_name:
                 try:
-                    if self.tmux_server.has_session(agent.tmux_session_name):
+                    if self.has_tmux_session(agent.tmux_session_name):
                         # Find session by iteration (avoid deprecated get_by_id)
                         tmux_session = None
                         for tmux_sess in self.tmux_server.sessions:
@@ -1325,6 +1432,12 @@ REMEMBER:
 
             pane = tmux_session.attached_window.attached_pane
 
+            # 🔍 DEBUG: Log the launch command
+            logger.info(f"🔍 RESTART DEBUG: Launch command for {agent.cli_type} agent {agent_id[:8]}:")
+            logger.info(f"🔍 Command length: {len(launch_command)} chars")
+            logger.info(f"🔍 First 200 chars: {launch_command[:200]}")
+            logger.info(f"🔍 Last 200 chars: {launch_command[-200:]}")
+
             # If using GLM, export env vars in the shell first
             if env_vars:
                 logger.info(f"Exporting GLM environment variables in shell for restarted agent {agent_id}")
@@ -1333,8 +1446,10 @@ REMEMBER:
                 # Brief pause to ensure exports complete
                 await asyncio.sleep(0.5)
 
-            # Now send the claude launch command
+            # Now send the launch command
+            logger.info(f"🔍 RESTART DEBUG: Sending launch command to tmux pane...")
             pane.send_keys(launch_command, enter=True)
+            logger.info(f"🔍 RESTART DEBUG: Launch command sent, waiting for CLI to be ready...")
 
             ready_timeout = getattr(self.config, "cli_ready_timeout_seconds", 60)
             logger.info(
@@ -1471,7 +1586,7 @@ REMEMBER:
 
             logger.debug(f"Sending message to tmux session: {agent.tmux_session_name}")
 
-            has_session = self.tmux_server.has_session(agent.tmux_session_name)
+            has_session = self.has_tmux_session(agent.tmux_session_name)
             logger.debug(f"has_session({agent.tmux_session_name}) = {has_session}")
             if not has_session:
                 logger.warning(f"Tmux session {agent.tmux_session_name} not found")
